@@ -10,4 +10,6 @@
     <string name="shift_start_full_date_string_representation">pełna data i godzina rozpoczęcia pracy</string>
     <string name="forth_commute_included_string_representation">do pracy</string>
     <string name="back_commute_included_string_representation">z pracy</string>
+    <string name="day_hours_option_selected_string_representation">godziny dzienne</string>
+    <string name="night_hours_option_selected_string_representation">godziny nocne</string>
 </resources>

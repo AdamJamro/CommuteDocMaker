@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import com.example.commutedocmaker.ui.uiUtils.CustomToggleButton
 import com.example.commutedocmaker.ui.viewModels.DocMakerAppViewModel
 import com.example.cupcake.ui.theme.CommuteDocMakerTheme
 
@@ -28,7 +29,7 @@ class MainActivity : ComponentActivity() {
                         filename = name
                         launchDraftEditor()
                     }
-                    )
+                )
             }
         }
     }

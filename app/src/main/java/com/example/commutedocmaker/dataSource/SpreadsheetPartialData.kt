@@ -2,7 +2,7 @@ package com.example.commutedocmaker.dataSource
 
 import android.content.Context
 import com.example.commutedocmaker.R
-import com.example.commutedocmaker.ui.viewModels.UIState
+import com.example.commutedocmaker.ui.viewModels.UICollectedData
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -17,7 +17,7 @@ enum class DraftFormField(
     SHIFT_START_FULL_DATE(fieldAsString = R.string.shift_start_full_date_string_representation.toString())
 }
 
-class SpreadsheetPartialData(var title: String, val content: String, val uiState: UIState) {
+class SpreadsheetPartialData(var title: String, val content: String, val uiCollectedData: UICollectedData) {
     override fun toString(): String {
         return "spreadsheetPartialData(title='$title', content='$content')"
     }

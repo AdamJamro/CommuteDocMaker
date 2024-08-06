@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.commutedocmaker"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -66,5 +66,6 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     implementation("androidx.compose.runtime:runtime-livedata:1.6.8")
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
 
 }

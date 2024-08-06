@@ -1,6 +1,5 @@
 package com.example.commutedocmaker.ui.viewModels
 
-import android.location.Address
 import androidx.lifecycle.ViewModel
 import com.example.commutedocmaker.R
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -8,8 +7,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.Date
 
-sealed class DraftEditorEvent {
-
+sealed class DraftEditorEvent() {
+    data class BaseAddressChanged(val address: String) : DraftEditorEvent()
+    data class DestinationAddressChanged(val address: String) : DraftEditorEvent()
+    data class DistanceTravelledChanged(val distance: String) : DraftEditorEvent()
+    data class ShiftStartTimeChanged(val time: String) : DraftEditorEvent()
+    data class ShiftEndTimeChanged(val time: String) : DraftEditorEvent()
+    data class ForthRouteIncludedChanged(val included: Boolean) : DraftEditorEvent()
+    data class BackRouteIncludedChanged(val included: Boolean) : DraftEditorEvent()
     object Submit : DraftEditorEvent()
 }
 
@@ -23,41 +28,51 @@ enum class DraftFormField(
     SHIFT_START_FULL_DATE(fieldAsString = R.string.shift_start_full_date_string_representation.toString())
 }
 
-data class UIState(
+data class UICollectedData(
     val baseAddress: String = "",
     val destinationAddress: String = "",
-    val distanceTravelled: Float = 0f,
-    val shiftTimeLength: Float = 0f,
-    val shiftStartFullDate: Date = Date(),
+    val distanceTravelled: String = "",
+    val shiftStartTime: String = "",
+    val shiftEndTime: String = "",
+    val forthRouteIncluded: Boolean = true,
+    val backRouteIncluded: Boolean = true
 )
 
 class CreateNewDraftViewModel: ViewModel() {
 
-        private val _uiState: MutableStateFlow<UIState> = MutableStateFlow(UIState())
-        val uiState: StateFlow<UIState> = _uiState.asStateFlow()
+        private val _uiCollectedData: MutableStateFlow<UICollectedData> = MutableStateFlow(UICollectedData())
+        val uiCollectedData: StateFlow<UICollectedData> = _uiCollectedData.asStateFlow()
 
-        fun setBaseAddress(address: String) {
-            _uiState.value.copy(baseAddress = address).also { _uiState.value = it }
+        fun onEvent(event: DraftEditorEvent) {
+            when (event) {
+                is DraftEditorEvent.Submit -> submitDraft(_uiCollectedData.value)
+                is DraftEditorEvent.BaseAddressChanged -> {
+                    _uiCollectedData.value.copy(baseAddress = event.address).also { _uiCollectedData.value = it }
+                }
+                is DraftEditorEvent.DestinationAddressChanged -> {
+                    _uiCollectedData.value.copy(destinationAddress = event.address).also { _uiCollectedData.value = it }
+                }
+                is DraftEditorEvent.DistanceTravelledChanged -> {
+                    _uiCollectedData.value.copy(distanceTravelled = event.distance).also { _uiCollectedData.value = it }
+                }
+                is DraftEditorEvent.ShiftStartTimeChanged -> {
+                    _uiCollectedData.value.copy(shiftStartTime = event.time).also { _uiCollectedData.value = it }
+                }
+                is DraftEditorEvent.ShiftEndTimeChanged -> {
+                    _uiCollectedData.value.copy(shiftEndTime = event.time).also { _uiCollectedData.value = it }
+                }
+                is DraftEditorEvent.ForthRouteIncludedChanged -> {
+                    _uiCollectedData.value.copy(forthRouteIncluded = event.included).also { _uiCollectedData.value = it }
+                }
+                is DraftEditorEvent.BackRouteIncludedChanged -> {
+                    _uiCollectedData.value.copy(backRouteIncluded = event.included).also { _uiCollectedData.value = it }
+                }
+            }
         }
 
-        fun setDestinationAddress(address: String) {
-            _uiState.value.copy(destinationAddress = address).also { _uiState.value = it }
-        }
-
-        fun setDistanceTravelled(distance: Float) {
-            _uiState.value.copy(distanceTravelled = distance).also { _uiState.value = it }
-        }
-
-        fun setShiftTimeLength(time: Float) {
-            _uiState.value.copy(shiftTimeLength = time).also { _uiState.value = it }
-        }
-
-        fun setShiftStartFullDate(date: Date) {
-            _uiState.value.copy(shiftStartFullDate = date).also { _uiState.value = it }
-        }
-
-        fun submitDraft(uiState: UIState) {
-
+        fun submitDraft(uiCollectedData: UICollectedData): DraftEditorEvent {
+            // submit draft
+            return DraftEditorEvent.Submit
         }
 
 

@@ -33,141 +33,6 @@ enum class CommuteDocMakerScreen {
     AUTO_DETAILS_SCREEN
 }
 
-
-@Composable
-fun DocMakerSideMenu(
-    modifier: Modifier = Modifier,
-    drawerState: DrawerState,
-    currentScreen: CommuteDocMakerScreen,
-    onClickHomeScreen: () -> Unit,
-    onClickDocShareListScreen: () -> Unit,
-    onClickAutoDetails: () -> Unit,
-    content: @Composable () -> Unit,
-) {
-    ModalNavigationDrawer(
-        modifier = modifier,
-        gesturesEnabled = true,
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet {
-                Text(
-                    "Drawer content",
-                    modifier = Modifier.padding(16.dp),
-                    fontSize = Typography.titleLarge.fontSize
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Divider()
-                NavigationDrawerItem(
-                    label = { Text(text = stringResource(id = R.string.drafts_screen_name)) },
-                    onClick = onClickHomeScreen,
-                    selected = currentScreen == CommuteDocMakerScreen.HOME_SCREEN
-                ) 
-                NavigationDrawerItem(
-                    label = { Text(text = stringResource(id = R.string.generated_files_screen_name)) },
-                    onClick = onClickDocShareListScreen,
-                    selected = currentScreen == CommuteDocMakerScreen.COMMUTE_DOC_SHARE_LIST_SCREEN
-                )
-                NavigationDrawerItem(
-                    label = { Text(text = stringResource(id = R.string.auto_details_screen_name)) },
-                    onClick = onClickAutoDetails,
-                    selected = currentScreen == CommuteDocMakerScreen.AUTO_DETAILS_SCREEN
-                )
-            }
-        },
-        content = content
-    )
-}
-
-@Composable
-fun CreateDraftAlertDialog(
-    shouldShowDialog: Boolean,
-    onDismissRequest: () -> Unit,
-    onSubmitted: (String) -> Unit
-    ) {
-    val context = LocalContext.current
-
-    fun nameIsValid(name: String): Boolean {
-        if (name.length > 25) return false
-
-        if (name.trimmedLength() == 0) return false
-
-        for (char in name) {
-            if ((!char.isLetterOrDigit() && char != ' ') || char == '\n' ) return false
-        }
-
-        return true
-    }
-
-    var text by remember { mutableStateOf("") }
-    val onDismissRequestWrapped = {
-        onDismissRequest()
-        text = ""
-    }
-    val onSubmittedWrapped = { str: String ->
-        var submittedName: String = str
-        submittedName.trim().also { submittedName = it }
-        if (nameIsValid(submittedName)) {
-            onSubmitted(submittedName)
-        } else {
-            Toast.makeText(context, "Invalid name!", Toast.LENGTH_SHORT).show()
-            onDismissRequest()
-        }
-        text = ""
-    }
-
-
-    if (shouldShowDialog) {
-        Dialog(
-            onDismissRequest = onDismissRequestWrapped,
-            properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true),
-        ) {
-            Surface(
-                modifier = Modifier.wrapContentSize(),
-                    shape = MaterialTheme.shapes.medium,
-                    tonalElevation = 1.dp,
-                    shadowElevation = 2.dp,
-                color = MaterialTheme.colorScheme.background
-            ) {
-                Column (modifier = Modifier.padding(8.dp)) {
-
-                    Text(modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                        .align(Alignment.CenterHorizontally),
-                        text = "Enter new draft's name")
-
-                    Divider()
-
-                    TextField(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentHeight()
-                            .align(Alignment.CenterHorizontally),
-                        value = text,
-                        onValueChange = { newText: String ->
-                                text = newText
-                        },
-                        label = { Text("name") },
-                        singleLine = true
-                    )
-
-                    Button(
-                        modifier = Modifier
-                            .wrapContentHeight()
-                            .align(alignment = Alignment.End),
-                        onClick = { onSubmittedWrapped(text) }
-                    ) {
-                        Text(
-                            text = "Confirm",
-                            color = Color.White
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
 @Composable
 fun DocMakerApp(
     viewModel: DocMakerAppViewModel,
@@ -248,4 +113,135 @@ fun DocMakerApp(
         )
     }
 }
+
+@Composable
+fun DocMakerSideMenu(
+    modifier: Modifier = Modifier,
+    drawerState: DrawerState,
+    currentScreen: CommuteDocMakerScreen,
+    onClickHomeScreen: () -> Unit,
+    onClickDocShareListScreen: () -> Unit,
+    onClickAutoDetails: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    ModalNavigationDrawer(
+        modifier = modifier,
+        gesturesEnabled = true,
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet {
+                Text(
+                    "Drawer content",
+                    modifier = Modifier.padding(16.dp),
+                    fontSize = Typography.titleLarge.fontSize
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Divider()
+                NavigationDrawerItem(
+                    label = { Text(text = stringResource(id = R.string.drafts_screen_name)) },
+                    onClick = onClickHomeScreen,
+                    selected = currentScreen == CommuteDocMakerScreen.HOME_SCREEN
+                ) 
+                NavigationDrawerItem(
+                    label = { Text(text = stringResource(id = R.string.generated_files_screen_name)) },
+                    onClick = onClickDocShareListScreen,
+                    selected = currentScreen == CommuteDocMakerScreen.COMMUTE_DOC_SHARE_LIST_SCREEN
+                )
+                NavigationDrawerItem(
+                    label = { Text(text = stringResource(id = R.string.auto_details_screen_name)) },
+                    onClick = onClickAutoDetails,
+                    selected = currentScreen == CommuteDocMakerScreen.AUTO_DETAILS_SCREEN
+                )
+            }
+        },
+        content = content
+    )
+}
+
+fun isFileNameValid(name: String): Boolean {
+    if (name.length > 25) return false
+    if (name.trimmedLength() == 0) return false
+        for (char in name) {
+            if ((!char.isLetterOrDigit() && char != ' ') || char == '\n' ) return false
+        }
+    return true
+}
+
+@Composable
+fun CreateDraftAlertDialog(
+    shouldShowDialog: Boolean,
+    onDismissRequest: () -> Unit,
+    onSubmitted: (String) -> Unit
+    ) {
+    if (shouldShowDialog) {
+        val context = LocalContext.current
+        var text by remember { mutableStateOf("") }
+        val onDismissRequestWrapped = {
+            onDismissRequest()
+            text = ""
+        }
+        val onSubmittedWrapped = { str: String ->
+            var submittedName: String = str
+            submittedName.trim().also { submittedName = it }
+            if (isFileNameValid(submittedName)) {
+                onSubmitted(submittedName)
+            } else {
+                Toast.makeText(context, "Invalid name!", Toast.LENGTH_SHORT).show()
+                onDismissRequest()
+            }
+            text = ""
+        }
+
+        Dialog(
+            onDismissRequest = onDismissRequestWrapped,
+            properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true),
+        ) {
+            Surface(
+                modifier = Modifier.wrapContentSize(),
+                    shape = MaterialTheme.shapes.medium,
+                    tonalElevation = 1.dp,
+                    shadowElevation = 2.dp,
+                color = MaterialTheme.colorScheme.background
+            ) {
+                Column (modifier = Modifier.padding(8.dp)) {
+
+                    Text(modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .align(Alignment.CenterHorizontally),
+                        text = "Enter new draft's name")
+
+                    Divider()
+
+                    TextField(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentHeight()
+                            .align(Alignment.CenterHorizontally),
+                        value = text,
+                        onValueChange = { newText: String ->
+                                text = newText
+                        },
+                        label = { Text("name") },
+                        singleLine = true
+                    )
+
+                    Button(
+                        modifier = Modifier
+                            .wrapContentHeight()
+                            .align(alignment = Alignment.End),
+                        onClick = { onSubmittedWrapped(text) }
+                    ) {
+                        Text(
+                            text = "Confirm",
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 

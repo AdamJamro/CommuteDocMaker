@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="CalenderViewCustom">calendar_view_custom</style>
+    <style name="minDate">min_date</style>
+    <style name="maxDate">max_date</style>
+</resources>
