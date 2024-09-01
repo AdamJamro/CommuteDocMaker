@@ -12,4 +12,12 @@
     <string name="back_commute_included_string_representation">z pracy</string>
     <string name="day_hours_option_selected_string_representation">godziny dzienne</string>
     <string name="night_hours_option_selected_string_representation">godziny nocne</string>
+    <string name="owner_first_name">Imię właścicela</string>
+    <string name="owner_last_name">Nazwisko</string>
+    <string name="address">Adres</string>
+    <string name="auto_brand">Marka samochodu</string>
+    <string name="auto_model">Model</string>
+    <string name="motor_capacity">Pojemność silnika</string>
+    <string name="registration_number">Numer rejestracyjny</string>
+    <string name="fab_add_new_draft">Dodaj Nowy Dokument</string>
 </resources>

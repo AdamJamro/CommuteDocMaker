@@ -16,11 +16,11 @@ import com.example.commutedocmaker.ui.viewModels.DocMakerAppViewModel
 import com.example.commutedocmaker.ui.theme.Typography
 
 @Composable
-fun CommuteDocShareListScreen (
-    docViewModel: DocMakerAppViewModel
+fun DocShareListView (
+    viewModel: DocMakerAppViewModel
 //    fileItem: List<DraftEntry>
 ) {
-    val fileItems = docViewModel.entries.collectAsState()
+    val fileItems = viewModel.entries.collectAsState()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),

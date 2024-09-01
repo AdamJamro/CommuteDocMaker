@@ -16,6 +16,7 @@
 package com.example.commutedocmaker.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -85,5 +86,24 @@ public val Typography = Typography(
         fontSize = 12.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.sp
+    ),
+)
+
+val docAppTextStyles: Map<String, TextStyle> = mapOf(
+    "bodyLarge" to Typography.bodyLarge,
+    "bodyMedium" to Typography.bodyMedium,
+    "bodySmall" to Typography.bodySmall,
+    "headlineLarge" to Typography.headlineLarge,
+    "headlineMedium" to Typography.headlineMedium,
+    "headlineSmall" to Typography.headlineSmall,
+    "titleLarge" to Typography.titleLarge,
+    "titleMedium" to Typography.titleMedium,
+    "titleSmall" to Typography.titleSmall,
+    "fab" to TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Bold,
+        fontSize = 20.sp,
+        lineHeight = 24.sp,
+        color = Color(0xFF6200EE)
     ),
 )
