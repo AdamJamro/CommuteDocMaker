@@ -3,6 +3,8 @@ package com.example.commutedocmaker
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.commutedocmaker.dataSource.DraftEntry
@@ -29,6 +31,7 @@ class DraftEditorActivity : ComponentActivity() {
 
         setContent {
             DraftEditorView(
+                modifier = Modifier.safeContentPadding(),
                 viewModel = viewModel(factory = viewModelFactory),
                 onFinishActivity = { resultCode: Int,
                                      draft: DraftEntry? ->

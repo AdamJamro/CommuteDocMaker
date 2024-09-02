@@ -3,8 +3,15 @@ package com.example.commutedocmaker.ui
 import android.app.Activity.RESULT_OK
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +29,10 @@ import com.example.commutedocmaker.ui.uiUtils.DatePickerDialog
 import com.example.commutedocmaker.ui.uiUtils.CommuteClockTimeRangeSliderWrapper
 import com.example.commutedocmaker.ui.viewModels.DraftEditorEvent.*
 import com.example.commutedocmaker.ui.theme.Typography
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun DraftEditorView (
@@ -34,12 +45,13 @@ fun DraftEditorView (
 ) {
     val uiState = viewModel.draftDataPatch.collectAsState()
     var showNameChangeDialog by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     DraftPickNameDialog(
         shouldShowDialog = showNameChangeDialog,
         onDismissRequest = { showNameChangeDialog = false },
         onSubmitted = { newName: String ->
-            viewModel.onEvent(DraftNameChanged(newName))
+            viewModel.onUiEvent(DraftNameChanged(newName))
             showNameChangeDialog = false
         },
         previousName = viewModel.title
@@ -50,36 +62,52 @@ fun DraftEditorView (
             .fillMaxSize()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 15.dp)
-                .clickable(onClick = { showNameChangeDialog = true }),
-            text = viewModel.title,
-            style = Typography.titleLarge,
-            textAlign = TextAlign.Center,
-            softWrap = false
-        )
-
-        DataPatchEditor(Modifier.wrapContentSize().fillMaxWidth(), uiState, viewModel)
-
-
-        Spacer(modifier = Modifier.weight(1f))
-        Button(
-            modifier = Modifier.align(Alignment.End),
-            onClick = {
-                val draft : DraftEntry? = viewModel.onEvent(Submit)
-                if (draft == null) {
-                    Toast.makeText(null, "Invalid data!", Toast.LENGTH_SHORT).show()
-                } else {
-                    onFinishActivity(RESULT_OK, draft)
-                }
-            }
+                .wrapContentHeight()
+                .padding(vertical = 8.dp)
         ) {
-            Text("Submit draft")
+            Text(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(vertical = 15.dp)
+                    .clickable(onClick = { showNameChangeDialog = true })
+                    .width(200.dp),
+                text = viewModel.title,
+                style = Typography.titleLarge,
+                textAlign = TextAlign.Center,
+                softWrap = true
+            )
+            Button(
+                modifier = Modifier.align(Alignment.CenterEnd),
+                onClick = {
+                    val draft : DraftEntry? = viewModel.onUiEvent(Submit)
+                    if (draft == null) {
+                        Toast.makeText(null, "Invalid data!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        onFinishActivity(RESULT_OK, draft)
+                    }
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Done,
+                    contentDescription = "Submit draft"
+                )
+            }
         }
+
+
+        DataPatchesEditor(
+            Modifier
+                .wrapContentSize()
+                .fillMaxWidth(),
+            uiState.value,
+            viewModel,
+            onFinishActivity
+        )
     }
 }
 
@@ -122,92 +150,140 @@ fun convertStringToFloatRange(start: String, end: String): ClosedFloatingPointRa
 
 
 @Composable
-fun DataPatchEditor(
+fun DataPatchesEditor(
     modifier: Modifier = Modifier,
-    dataPatchState: State<DraftDataPatch>,
-    viewModel: DraftEditorViewModel
+    dataPatchesState: List<DraftDataPatch>,
+    viewModel: DraftEditorViewModel,
+    onFinishEditor: (Int, DraftEntry?) -> Unit = { _, _ -> }
 ) {
-    var showDatePickerDialog by remember { mutableStateOf(false) }
-
-    Column(modifier){
-        OutlinedTextField(
-            value = dataPatchState.value.baseAddress,
-            onValueChange = { viewModel.onEvent(BaseAddressChanged(it)) },
-            label = { Text(stringResource(id = R.string.base_address_string_representation)) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = dataPatchState.value.destinationAddress,
-            onValueChange = { viewModel.onEvent(DestinationAddressChanged(it)) },
-            label = { Text(stringResource(id = R.string.destination_address_string_representation)) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = dataPatchState.value.distanceTravelled,
-            onValueChange = { viewModel.onEvent(DistanceTravelledChanged(it)) },
-            label = { Text(stringResource(id = R.string.distance_travelled_string_representation)) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Row {
-            Text(
-                modifier = Modifier.align(Alignment.CenterVertically),
-                text = stringResource(id = R.string.forth_commute_included_string_representation)
-            )
-            Spacer(modifier = Modifier.size(12.dp))
-            Switch(
-                checked = dataPatchState.value.forthRouteIncluded,
-                onCheckedChange = { viewModel.onEvent(ForthRouteIncludedChanged(it)) },
-            )
-        }
-
-        Row {
-            Text(
-                modifier = Modifier.align(Alignment.CenterVertically),
-                text = stringResource(id = R.string.back_commute_included_string_representation)
-            )
-            Spacer(modifier = Modifier.size(12.dp))
-            Switch(
-                checked = dataPatchState.value.backRouteIncluded,
-                onCheckedChange = { viewModel.onEvent(BackRouteIncludedChanged(it)) },
-            )
-        }
-
-        CommuteClockTimeRangeSliderWrapper(
-            initSliderPosition =
-            if (dataPatchState.value.shiftStartTime != "")
-                convertStringToFloatRange(
-                    start = dataPatchState.value.shiftStartTime,
-                    end = dataPatchState.value.shiftEndTime
+    LazyColumn {
+        itemsIndexed(dataPatchesState) { patchIndex, dataPatchState ->
+            var showDatePickerDialog by remember { mutableStateOf(false) }
+            Card(
+                modifier = modifier
+                    .fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                colors = CardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurface,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                 )
-            else
-                null,
-            onUpdateTimeRange = { startTime: String, endTime: String ->
-                viewModel.onEvent(ShiftStartTimeChanged(startTime))
-                viewModel.onEvent(ShiftEndTimeChanged(endTime))
-                Log.e("DEBUG", "update: startTime:$startTime, endTime:$endTime")
-            }
-        )
+            ) {
+                Column(modifier.padding(12.dp)) {
+                    OutlinedTextField(
+                        value = dataPatchState.baseAddress,
+                        onValueChange = { viewModel.onUiEvent(BaseAddressChanged(it, patchIndex)) },
+                        label = { Text(stringResource(id = R.string.base_address_string_representation)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = dataPatchState.destinationAddress,
+                        onValueChange = { viewModel.onUiEvent(DestinationAddressChanged(it, patchIndex)) },
+                        label = { Text(stringResource(id = R.string.destination_address_string_representation)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = dataPatchState.distanceTravelled,
+                        onValueChange = { viewModel.onUiEvent(DistanceTravelledChanged(it, patchIndex)) },
+                        label = { Text(stringResource(id = R.string.distance_travelled_string_representation)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Row {
+                        Text(
+                            modifier = Modifier.align(Alignment.CenterVertically),
+                            text = stringResource(id = R.string.forth_commute_included_string_representation)
+                        )
+                        Spacer(modifier = Modifier.size(12.dp))
+                        Switch(
+                            checked = dataPatchState.forthRouteIncluded,
+                            onCheckedChange = { viewModel.onUiEvent(ForthRouteIncludedChanged(it, patchIndex)) },
+                        )
+                    }
+
+                    Row {
+                        Text(
+                            modifier = Modifier.align(Alignment.CenterVertically),
+                            text = stringResource(id = R.string.back_commute_included_string_representation)
+                        )
+                        Spacer(modifier = Modifier.size(12.dp))
+                        Switch(
+                            checked = dataPatchState.backRouteIncluded,
+                            onCheckedChange = { viewModel.onUiEvent(BackRouteIncludedChanged(it, patchIndex)) },
+                        )
+                    }
+
+                    CommuteClockTimeRangeSliderWrapper(
+                        initSliderPosition =
+                        if (dataPatchState.shiftStartTime != "")
+                            convertStringToFloatRange(
+                                start = dataPatchState.shiftStartTime,
+                                end = dataPatchState.shiftEndTime
+                            )
+                        else
+                            null,
+                        onUpdateTimeRange = { startTime: String, endTime: String ->
+                            viewModel.onUiEvent(ShiftStartTimeChanged(startTime, patchIndex))
+                            viewModel.onUiEvent(ShiftEndTimeChanged(endTime, patchIndex))
+                            Log.e("DEBUG", "update: startTime:$startTime, endTime:$endTime")
+                        }
+                    )
 
 //        val selectedDates = remember { mutableStateListOf<LocalDate>() }
 
-        Button(
-            onClick = { showDatePickerDialog = true },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Select date")
-        }
-        if (showDatePickerDialog) {
-            DatePickerDialog(
-                onDatesSelected = {
+                    Button(
+                        onClick = { showDatePickerDialog = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Select date")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.size(12.dp))
+
+            if (showDatePickerDialog) {
+                DatePickerDialog(
+                    onDatesSelected = {
 //                    selectedDates.clear(); selectedDates.addAll(it)
-                    viewModel.onEvent(SelectedDatesChanged(it))
-                },
-                onDismissRequest = { showDatePickerDialog = false },
-                currentSelectedDates = dataPatchState.value.dates
-            )
+                        viewModel.onUiEvent(SelectedDatesChanged(it, patchIndex))
+                    },
+                    onDismissRequest = { showDatePickerDialog = false },
+                    currentSelectedDates = dataPatchState.dates
+                )
+            }
+        }
+
+        item {
+            Column(Modifier.wrapContentSize().fillParentMaxWidth()){
+                Button(
+                    modifier = Modifier.align(Alignment.Start),
+                    onClick = {
+                        viewModel.addDraftDataPatch()
+                    }
+                ) {
+                    Text(stringResource(R.string.create_new_data_patach_label))
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+                Button(
+                    modifier = Modifier.align(Alignment.End),
+                    onClick = {
+                        val draft : DraftEntry? = viewModel.onUiEvent(Submit)
+                        if (draft == null) {
+                            Toast.makeText(null, "Invalid data!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            onFinishEditor(RESULT_OK, draft)
+                        }
+                    }
+                ) {
+                    Text("Submit draft")
+                }
+            }
         }
     }
+
 }

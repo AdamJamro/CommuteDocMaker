@@ -13,21 +13,23 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 sealed class DraftEditorEvent {
-    data class BaseAddressChanged(val address: String) : DraftEditorEvent()
-    data class DestinationAddressChanged(val address: String) : DraftEditorEvent()
-    data class DistanceTravelledChanged(val distance: String) : DraftEditorEvent()
-    data class ShiftStartTimeChanged(val time: String) : DraftEditorEvent()
-    data class ShiftEndTimeChanged(val time: String) : DraftEditorEvent()
-    data class ForthRouteIncludedChanged(val included: Boolean) : DraftEditorEvent()
-    data class BackRouteIncludedChanged(val included: Boolean) : DraftEditorEvent()
+    data class BaseAddressChanged(val address: String, val patchIndex: Int) : DraftEditorEvent()
+    data class DestinationAddressChanged(val address: String, val patchIndex: Int) : DraftEditorEvent()
+    data class DistanceTravelledChanged(val distance: String, val patchIndex: Int) : DraftEditorEvent()
+    data class ShiftStartTimeChanged(val time: String, val patchIndex: Int) : DraftEditorEvent()
+    data class ShiftEndTimeChanged(val time: String, val patchIndex: Int) : DraftEditorEvent()
+    data class ForthRouteIncludedChanged(val included: Boolean, val patchIndex: Int) : DraftEditorEvent()
+    data class BackRouteIncludedChanged(val included: Boolean, val patchIndex: Int) : DraftEditorEvent()
+    data class SelectedDatesChanged(val dates: Collection<LocalDate>, val patchIndex: Int) : DraftEditorEvent()
     data class DraftNameChanged(val title: String) : DraftEditorEvent()
-    data class SelectedDatesChanged(val dates: Collection<LocalDate>) : DraftEditorEvent()
     data object Submit : DraftEditorEvent()
 
+    //TODO("delete Restore")
     data class Restore(val draftSavedRawData: DraftEntry) : DraftEditorEvent()
 }
 
@@ -36,62 +38,97 @@ sealed class DraftEditorEvent {
 class DraftEditorViewModel(
     initTitle: String,
     private val scope: CoroutineScope,
-    private val _draftDataPatch: MutableStateFlow<DraftDataPatch> = MutableStateFlow(DraftDataPatch()),
+    injectDataPatch: MutableStateFlow<List<DraftDataPatch>> = MutableStateFlow(listOf(DraftDataPatch()))
 //    private val draftEntryIndex: Int = -1 // -1 for no overwriting
 ): ViewModel() {
-    val draftDataPatch: StateFlow<DraftDataPatch> = _draftDataPatch.asStateFlow()
+    private val _draftDataPatch: MutableStateFlow<List<DraftDataPatch>> = injectDataPatch
+    val draftDataPatch: StateFlow<List<DraftDataPatch>> = _draftDataPatch.asStateFlow()
     private val _title: MutableState<String> = mutableStateOf(initTitle)
     val title by derivedStateOf { _title.value }
 
-    fun onEvent(event: DraftEditorEvent): DraftEntry? {
+    private fun updateDraftDataPatchAt(patchIndex: Int, patch: DraftDataPatch) {
+        _draftDataPatch.update {
+            _draftDataPatch.value.toMutableList().apply {
+                this[patchIndex] = patch
+            }
+        }
+    }
+
+    fun addDraftDataPatch() {
+        _draftDataPatch.update {
+            _draftDataPatch.value + DraftDataPatch()
+        }
+    }
+
+    fun addDraftDataPatch(patch: DraftDataPatch) {
+        _draftDataPatch.update {
+            _draftDataPatch.value + patch
+        }
+    }
+
+    fun removeDraftDataPatchAt(patchIndex: Int) {
+        _draftDataPatch.update {
+            _draftDataPatch.value.toMutableList().apply {
+                removeAt(patchIndex)
+            }
+        }
+    }
+
+    fun removeDraftDataPatch(patch: DraftDataPatch) {
+        _draftDataPatch.update {
+            _draftDataPatch.value - patch
+        }
+    }
+
+    fun onUiEvent(event: DraftEditorEvent): DraftEntry? {
         when (event) {
             is Submit ->
                 return DraftEntry(
                     title = _title.value,
                     contentDescription = "Draft content",
-                    draftDataPatches = listOf(_draftDataPatch.value)
+                    draftDataPatches = _draftDataPatch.value
                 )
             is Restore ->
                 TODO("delete Restore")
             is SelectedDatesChanged -> {
-                scope.launch {
-                    _draftDataPatch.value.copy(dates = event.dates.toList()).also { _draftDataPatch.value = it }
-                }
+                _draftDataPatch.value[event.patchIndex]
+                    .copy(dates = event.dates.toList())
+                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
             }
             is BaseAddressChanged -> {
-                scope.launch {
-                    _draftDataPatch.value.copy(baseAddress = event.address).also { _draftDataPatch.value = it }
-                }
+                _draftDataPatch.value[event.patchIndex]
+                    .copy(baseAddress = event.address)
+                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
             }
             is DestinationAddressChanged -> {
-                scope.launch {
-                    _draftDataPatch.value.copy(destinationAddress = event.address).also { _draftDataPatch.value = it }
-                }
+                _draftDataPatch.value[event.patchIndex]
+                    .copy(destinationAddress = event.address)
+                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
             }
             is DistanceTravelledChanged -> {
-                scope.launch {
-                    _draftDataPatch.value.copy(distanceTravelled = event.distance).also { _draftDataPatch.value = it }
-                }
+                _draftDataPatch.value[event.patchIndex]
+                    .copy(distanceTravelled = event.distance)
+                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
             }
             is ShiftStartTimeChanged -> {
-                scope.launch {
-                    _draftDataPatch.value.copy(shiftStartTime = event.time).also { _draftDataPatch.value = it }
-                }
+                _draftDataPatch.value[event.patchIndex]
+                    .copy(shiftStartTime = event.time)
+                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
             }
             is ShiftEndTimeChanged -> {
-                scope.launch {
-                    _draftDataPatch.value.copy(shiftEndTime = event.time).also { _draftDataPatch.value = it }
-                }
+                _draftDataPatch.value[event.patchIndex]
+                    .copy(shiftEndTime = event.time)
+                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
             }
             is ForthRouteIncludedChanged -> {
-                scope.launch {
-                    _draftDataPatch.value.copy(forthRouteIncluded = event.included).also { _draftDataPatch.value = it }
-                }
+                _draftDataPatch.value[event.patchIndex]
+                    .copy(forthRouteIncluded = event.included)
+                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
             }
             is BackRouteIncludedChanged -> {
-                scope.launch {
-                    _draftDataPatch.value.copy(backRouteIncluded = event.included).also { _draftDataPatch.value = it }
-                }
+                _draftDataPatch.value[event.patchIndex]
+                    .copy(backRouteIncluded = event.included)
+                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
             }
             is DraftNameChanged -> {
                 scope.launch {
@@ -114,7 +151,7 @@ class DraftEditorViewModelFactory(
         if (modelClass.isAssignableFrom(DraftEditorViewModel::class.java)) {
             if (existingDraftEntry != null) {
                 try {
-                    val dataPatch = existingDraftEntry.draftDataPatches.first()
+                    val dataPatch = existingDraftEntry.draftDataPatches
                     return DraftEditorViewModel(
                         title,
                         scope,

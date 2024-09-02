@@ -22,4 +22,5 @@
     <string name="fab_add_new_draft">Dodaj Nowy Dokument</string>
     <string name="hide">Zwiń</string>
     <string name="auto_details_view_title">Dane Pojazdu i Właściciela</string>
+    <string name="create_new_data_patach_label">Dodaj nową zmianę</string>
 </resources>
