@@ -49,10 +49,22 @@ class DocMakerAppViewModel(
                 _entries.update {
                     draftRepository.allDrafts.first().sortedBy { it.draftId }
                 }
-                autoDetailsRepository.getById(0)?.details?.also {
-                    _autoDetails.update { it }
+
+                Log.d("DEBUG", "DocMakerAppViewModel.init fetched ${autoDetailsRepository.getById(0)}")
+//                val fetchedAutoData = autoDetailsRepository.getById(0)
+//                if (fetchedAutoData != null) {
+//                    _autoDetails.update { fetchedAutoData.details }
+//                    Log.d("DEBUG", "DocMakerAppViewModel.init fetched data from database ${_autoDetails.value}")
+//                } else {
+//                    Log.d("DEBUG", "DocMakerAppViewModel.init did not manage to fetch from database")
+//                }
+                autoDetailsRepository.getById(0)?.let { autoData ->
+                    _autoDetails.update { autoData.details }
+                    Log.d("DEBUG", "DocMakerAppViewModel.init fetched data from database ${_autoDetails.value}")
+                } ?: run {
+                    Log.d("DEBUG", "DocMakerAppViewModel.init did not manage to fetch from database ${_autoDetails.value}")
                 }
-                Log.d("DEBUG", "DocMakerAppViewModel.init fetched data from database ${_autoDetails.value}")
+
             } catch (e: Exception) {
                 Log.i("DEBUG info", "DocMakerAppViewModel.init failed to fetch data from database\n$e")
             }
@@ -83,7 +95,7 @@ class DocMakerAppViewModel(
     fun updateDatabase() {
         runBlocking {
             draftRepository.deleteAll()
-            autoDetailsRepository.deleteAll()
+//            autoDetailsRepository.deleteAll()
             val entries = _entries.value
             for (index in entries.indices) {
                 entries[index].draftId = index
@@ -91,7 +103,6 @@ class DocMakerAppViewModel(
             draftRepository.insert(entries)
             autoDetailsRepository.insert(_autoDetails.value)
             Log.d("DEBUG", "updated database auto details ${autoDetailsRepository.allAutoDetails.first().first().details}")
-
         }
     }
 

@@ -42,6 +42,19 @@ class MainActivity : ComponentActivity() {
                     onOpenDraftEditor = { draftTitle: String,
                                           draftData: DraftEntry?,
                                           draftIndex: Int ->
+                        //debug
+                        draftData?.let {
+                            if (it.draftDataPatches.isNotEmpty()) {
+                                Log.d("DEBUG", "launchDraftEditor: draftData: $it " +
+                                        "\n${it.title} " +
+                                        "\n${it.draftDataPatches.first()}" +
+                                        "\n${it.draftDataPatches.first().dates}")
+                            }
+                            else
+                                Log.d("DEBUG", "launchDraftEditor: draftData: $it " +
+                                        "\n${it.title} ")
+                        }
+
                         launchDraftEditor(draftTitle, draftData)
                         vm.updateCurrentDraftPos(draftIndex)
                     }
@@ -94,6 +107,7 @@ class MainActivity : ComponentActivity() {
 //        draftIndex: Int?
     ) {
         val intent = Intent(this, DraftEditorActivity::class.java)
+
         intent.apply {
             putExtra("draft_title", draftTitle)
             putExtra("draft_raw", draftData)

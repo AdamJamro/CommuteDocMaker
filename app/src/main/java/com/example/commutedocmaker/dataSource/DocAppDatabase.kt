@@ -3,13 +3,24 @@ package com.example.commutedocmaker.dataSource
 import android.content.Context
 import androidx.room.*
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.google.gson.Gson
+import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import java.lang.reflect.Type
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class Converters {
+    private val gson: Gson
+
+    init {
+        val gsonBuilder = GsonBuilder()
+        gsonBuilder.registerTypeAdapter(LocalDate::class.java, LocalDateAdapter())
+        gson = gsonBuilder.create()
+    }
+
     @TypeConverter
     fun valueToList(value: String): List<String> {
         return value.split(",")
@@ -22,22 +33,30 @@ class Converters {
 
     @TypeConverter
     fun fromPatchList(patches: List<DraftDataPatch>?): String? {
-        if (patches == null) {
-            return null
+        return patches?.let {
+            val type = object : TypeToken<List<DraftDataPatch>>() {}.type
+            gson.toJson(patches, type)
         }
-        val gson = Gson()
-        val type = object : TypeToken<List<DraftDataPatch>>() {}.type
-        return gson.toJson(patches, type)
     }
 
     @TypeConverter
     fun valueToPatchList(value: String?): ArrayList<DraftDataPatch>? {
-        if (value == null) {
-            return null
+        return value?.let{
+            val type = object : TypeToken<ArrayList<DraftDataPatch>>() {}.type
+            gson.fromJson(value, type)
         }
-        val gson = Gson()
-        val type = object : TypeToken<ArrayList<DraftDataPatch>>() {}.type
-        return gson.fromJson(value, type)
+    }
+}
+
+class LocalDateAdapter : JsonSerializer<LocalDate>, JsonDeserializer<LocalDate> {
+    private val formatter = DateTimeFormatter.ISO_LOCAL_DATE
+
+    override fun serialize(src: LocalDate?, typeOfSrc: Type?, context: JsonSerializationContext?): JsonElement {
+        return JsonPrimitive(formatter.format(src))
+    }
+
+    override fun deserialize(json: JsonElement?, typeOfT: Type?, context: JsonDeserializationContext?): LocalDate {
+        return LocalDate.parse(json?.asString, formatter)
     }
 }
 
@@ -56,7 +75,8 @@ abstract class DocAppDatabase : RoomDatabase() {
         ): DocAppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(context.applicationContext,
-                    DocAppDatabase::class.java, "draft_entry.db")
+                    DocAppDatabase::class.java, "draftApp.db")
+                    .fallbackToDestructiveMigration()
 //                    .addCallback(DatabaseCallback(scope))
                     .build()
                 INSTANCE = instance

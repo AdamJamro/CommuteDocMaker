@@ -14,6 +14,11 @@ class AutoDetailsRepository(private val dao: AutoDetailsDao) {
         }
     }
 
+    private suspend fun update(autoDetails: AutoDetailsData) {
+        dao.update(autoDetails)
+    }
+
+
     suspend fun getById(autoDetailsId: Int): AutoDetailsData? {
         return dao.getAutoDetailsById(autoDetailsId)
     }

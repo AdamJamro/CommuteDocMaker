@@ -20,4 +20,6 @@
     <string name="motor_capacity">Pojemność silnika</string>
     <string name="registration_number">Numer rejestracyjny</string>
     <string name="fab_add_new_draft">Dodaj Nowy Dokument</string>
+    <string name="hide">Zwiń</string>
+    <string name="auto_details_view_title">Dane Pojazdu i Właściciela</string>
 </resources>

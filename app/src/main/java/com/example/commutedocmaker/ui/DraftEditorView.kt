@@ -12,14 +12,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.commutedocmaker.DraftPickNameDialog
 import com.example.commutedocmaker.R
+import com.example.commutedocmaker.dataSource.DraftDataPatch
 import com.example.commutedocmaker.dataSource.DraftEntry
 import com.example.commutedocmaker.ui.viewModels.DraftEditorViewModel
 import kotlin.math.floor
 import com.example.commutedocmaker.ui.uiUtils.DatePickerDialog
 import com.example.commutedocmaker.ui.uiUtils.CommuteClockTimeRangeSliderWrapper
 import com.example.commutedocmaker.ui.viewModels.DraftEditorEvent.*
-import java.time.LocalDate
 import com.example.commutedocmaker.ui.theme.Typography
 
 @Composable
@@ -34,6 +35,16 @@ fun DraftEditorView (
     val uiState = viewModel.draftDataPatch.collectAsState()
     var showNameChangeDialog by remember { mutableStateOf(false) }
 
+    DraftPickNameDialog(
+        shouldShowDialog = showNameChangeDialog,
+        onDismissRequest = { showNameChangeDialog = false },
+        onSubmitted = { newName: String ->
+            viewModel.onEvent(DraftNameChanged(newName))
+            showNameChangeDialog = false
+        },
+        previousName = viewModel.title
+    )
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -46,85 +57,13 @@ fun DraftEditorView (
                 .fillMaxWidth()
                 .padding(vertical = 15.dp)
                 .clickable(onClick = { showNameChangeDialog = true }),
-            text = viewModel.getDraftTitle(),
+            text = viewModel.title,
             style = Typography.titleLarge,
             textAlign = TextAlign.Center,
+            softWrap = false
         )
 
-        OutlinedTextField(
-            value = uiState.value.baseAddress,
-            onValueChange = { viewModel.onEvent(BaseAddressChanged(it)) },
-            label = { Text(stringResource(id = R.string.base_address_string_representation)) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = uiState.value.destinationAddress,
-            onValueChange = { viewModel.onEvent(DestinationAddressChanged(it)) },
-            label = { Text(stringResource(id = R.string.destination_address_string_representation)) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = uiState.value.distanceTravelled,
-            onValueChange = { viewModel.onEvent(DistanceTravelledChanged(it)) },
-            label = { Text(stringResource(id = R.string.distance_travelled_string_representation)) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Row {
-            Text(
-                modifier = Modifier.align(Alignment.CenterVertically),
-                text = stringResource(id = R.string.forth_commute_included_string_representation)
-            )
-            Spacer(modifier = Modifier.size(12.dp))
-            Switch(
-                checked = uiState.value.forthRouteIncluded,
-                onCheckedChange = { viewModel.onEvent(ForthRouteIncludedChanged(it)) },
-            )
-        }
-
-        Row {
-            Text(
-                modifier = Modifier.align(Alignment.CenterVertically),
-                text = stringResource(id = R.string.back_commute_included_string_representation)
-            )
-            Spacer(modifier = Modifier.size(12.dp))
-            Switch(
-                checked = uiState.value.backRouteIncluded,
-                onCheckedChange = { viewModel.onEvent(BackRouteIncludedChanged(it)) },
-            )
-        }
-
-        CommuteClockTimeRangeSliderWrapper(
-            initSliderPosition =
-            if (uiState.value.shiftStartTime != "")
-                convertStringToFloatRange(start = uiState.value.shiftStartTime, end = uiState.value.shiftEndTime)
-            else
-                null,
-            onUpdateTimeRange = { startTime: String, endTime: String ->
-                viewModel.onEvent(ShiftStartTimeChanged(startTime))
-                viewModel.onEvent(ShiftEndTimeChanged(endTime))
-                Log.e("DEBUG", "update: startTime:$startTime, endTime:$endTime")
-            }
-        )
-
-        var showDatePickerDialog by remember { mutableStateOf(false) }
-        val selectedDates = remember { mutableStateListOf<LocalDate>() }
-
-        Button(
-            onClick = { showDatePickerDialog = true },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Select date")
-        }
-        if (showDatePickerDialog) {
-            DatePickerDialog(
-                onDatesSelected = { selectedDates.clear(); selectedDates.addAll(it) },
-                onDismissRequest = { showDatePickerDialog = false },
-                currentSelectedDates = selectedDates
-            )
-        }
+        DataPatchEditor(Modifier.wrapContentSize().fillMaxWidth(), uiState, viewModel)
 
 
         Spacer(modifier = Modifier.weight(1f))
@@ -179,4 +118,96 @@ fun convertStringToFloatRange(start: String, end: String): ClosedFloatingPointRa
     }
     Log.e("DEBUG", "RESULT RANGE $resultRange")
     return resultRange
+}
+
+
+@Composable
+fun DataPatchEditor(
+    modifier: Modifier = Modifier,
+    dataPatchState: State<DraftDataPatch>,
+    viewModel: DraftEditorViewModel
+) {
+    var showDatePickerDialog by remember { mutableStateOf(false) }
+
+    Column(modifier){
+        OutlinedTextField(
+            value = dataPatchState.value.baseAddress,
+            onValueChange = { viewModel.onEvent(BaseAddressChanged(it)) },
+            label = { Text(stringResource(id = R.string.base_address_string_representation)) },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            value = dataPatchState.value.destinationAddress,
+            onValueChange = { viewModel.onEvent(DestinationAddressChanged(it)) },
+            label = { Text(stringResource(id = R.string.destination_address_string_representation)) },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            value = dataPatchState.value.distanceTravelled,
+            onValueChange = { viewModel.onEvent(DistanceTravelledChanged(it)) },
+            label = { Text(stringResource(id = R.string.distance_travelled_string_representation)) },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Row {
+            Text(
+                modifier = Modifier.align(Alignment.CenterVertically),
+                text = stringResource(id = R.string.forth_commute_included_string_representation)
+            )
+            Spacer(modifier = Modifier.size(12.dp))
+            Switch(
+                checked = dataPatchState.value.forthRouteIncluded,
+                onCheckedChange = { viewModel.onEvent(ForthRouteIncludedChanged(it)) },
+            )
+        }
+
+        Row {
+            Text(
+                modifier = Modifier.align(Alignment.CenterVertically),
+                text = stringResource(id = R.string.back_commute_included_string_representation)
+            )
+            Spacer(modifier = Modifier.size(12.dp))
+            Switch(
+                checked = dataPatchState.value.backRouteIncluded,
+                onCheckedChange = { viewModel.onEvent(BackRouteIncludedChanged(it)) },
+            )
+        }
+
+        CommuteClockTimeRangeSliderWrapper(
+            initSliderPosition =
+            if (dataPatchState.value.shiftStartTime != "")
+                convertStringToFloatRange(
+                    start = dataPatchState.value.shiftStartTime,
+                    end = dataPatchState.value.shiftEndTime
+                )
+            else
+                null,
+            onUpdateTimeRange = { startTime: String, endTime: String ->
+                viewModel.onEvent(ShiftStartTimeChanged(startTime))
+                viewModel.onEvent(ShiftEndTimeChanged(endTime))
+                Log.e("DEBUG", "update: startTime:$startTime, endTime:$endTime")
+            }
+        )
+
+//        val selectedDates = remember { mutableStateListOf<LocalDate>() }
+
+        Button(
+            onClick = { showDatePickerDialog = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Select date")
+        }
+        if (showDatePickerDialog) {
+            DatePickerDialog(
+                onDatesSelected = {
+//                    selectedDates.clear(); selectedDates.addAll(it)
+                    viewModel.onEvent(SelectedDatesChanged(it))
+                },
+                onDismissRequest = { showDatePickerDialog = false },
+                currentSelectedDates = dataPatchState.value.dates
+            )
+        }
+    }
 }

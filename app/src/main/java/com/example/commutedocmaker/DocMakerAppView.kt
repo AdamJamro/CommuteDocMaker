@@ -35,7 +35,6 @@ import com.example.commutedocmaker.ui.theme.docAppTextStyles
 import com.example.commutedocmaker.ui.viewModels.DocMakerAppViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 enum class DocMakerAppViews {
     DRAFT_LIST_VIEW,
@@ -72,7 +71,7 @@ fun DocMakerAppView(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     var spreadsheetData by remember { mutableStateOf<List<DraftEntry>>(emptyList()) }
 
-    DraftAlertDialog(
+    DraftPickNameDialog(
         shouldShowDialog = showDialog,
         onDismissRequest = { showDialog = false },
         onSubmitted = { draftTitle ->
@@ -81,76 +80,84 @@ fun DocMakerAppView(
         }
     )
 
-    if (showLoadingAnimation)
-        DocMakerAppLoadingView()
-    else{
-
-        DocMakerSideMenu(
-            drawerState = drawerState,
-            currentScreen = getCurrentScreen(),
-            onClickHomeScreen = {
-                navController.navigate(DocMakerAppViews.DRAFT_LIST_VIEW.name)
-                scope.launch { drawerState.close() }
-            },
-            onClickDocShareListScreen = {
-                navController.navigate(DocMakerAppViews.DOC_SHARE_LIST_VIEW.name)
-                scope.launch { drawerState.close() }
-            },
-            onClickAutoDetails = {
-                navController.navigate(DocMakerAppViews.AUTO_DETAILS_VIEW.name)
-                scope.launch { drawerState.close() }
-            }
-        ) {
-            Scaffold(
-                floatingActionButton = {
-                    AnimatedFab(
-                        modifier = Modifier.padding(8.dp),
-                        onClick = {
-                            if (getCurrentScreen() != DocMakerAppViews.DRAFT_LIST_VIEW)
-                                navController.navigate(DocMakerAppViews.DRAFT_LIST_VIEW.name)
-                            showDialog = true
-                        }
-                    )
+    AnimatedContent(
+        targetState = showLoadingAnimation,
+        label = "mainAppViewWrap",
+        transitionSpec = {
+            fadeIn(animationSpec = tween(100)) togetherWith
+                    fadeOut(animationSpec = tween(1000))
+        }
+    ) { targetState->
+        if (targetState)
+            DocMakerAppLoadingView()
+        else{
+            DocMakerSideMenu(
+                drawerState = drawerState,
+                currentScreen = getCurrentScreen(),
+                onClickHomeScreen = {
+                    navController.navigate(DocMakerAppViews.DRAFT_LIST_VIEW.name)
+                    scope.launch { drawerState.close() }
                 },
-                content = { contentPadding ->
+                onClickDocShareListScreen = {
+                    navController.navigate(DocMakerAppViews.DOC_SHARE_LIST_VIEW.name)
+                    scope.launch { drawerState.close() }
+                },
+                onClickAutoDetails = {
+                    navController.navigate(DocMakerAppViews.AUTO_DETAILS_VIEW.name)
+                    scope.launch { drawerState.close() }
+                }
+            ) {
+                Scaffold(
+                    floatingActionButton = {
+                        AnimatedFab(
+                            modifier = Modifier.padding(8.dp),
+                            onClick = {
+                                if (getCurrentScreen() != DocMakerAppViews.DRAFT_LIST_VIEW)
+                                    navController.navigate(DocMakerAppViews.DRAFT_LIST_VIEW.name)
+                                showDialog = true
+                            }
+                        )
+                    },
+                    content = { contentPadding ->
 //                var uiState: CommuteDocMakerScreenState by remember { mutableStateOf(CommuteDocMakerScreenState()) }
 
 
-                    NavHost(
-                        modifier = Modifier.padding(contentPadding),
-                        navController = navController,
-                        startDestination = startScreen.name,
-                    ) {
-                        composable(DocMakerAppViews.DRAFT_LIST_VIEW.name) {
-                            DraftListView(
-                                draftItems = draftEntries,
-                                onEditDraft = { draftData: DraftEntry->
-                                    onOpenDraftEditor(
-                                        draftData.title,
-                                        draftData,
-                                        draftEntries.indexOf(draftData)
-                                    )
-                                },
-                                onGenerateDoc = { draftData: DraftEntry ->
-                                    //TODO
-                                },
-                                onDeleteDraft = { draftData: DraftEntry ->
-                                    viewModel.deleteEntry(context, draftData)
+                        NavHost(
+                            modifier = Modifier.padding(contentPadding),
+                            navController = navController,
+                            startDestination = startScreen.name,
+                        ) {
+                            composable(DocMakerAppViews.DRAFT_LIST_VIEW.name) {
+                                DraftListView(
+                                    draftItems = draftEntries,
+                                    onEditDraft = { draftData: DraftEntry->
+                                        onOpenDraftEditor(
+                                            draftData.title,
+                                            draftData,
+                                            draftEntries.indexOf(draftData)
+                                        )
+                                    },
+                                    onGenerateDoc = { draftData: DraftEntry ->
+                                        //TODO
+                                    },
+                                    onDeleteDraft = { draftData: DraftEntry ->
+                                        viewModel.deleteEntry(context, draftData)
+                                    }
+                                )
+                            }
+                            composable(DocMakerAppViews.DOC_SHARE_LIST_VIEW.name) {
+                                DocShareListView(viewModel = viewModel)
+                            }
+                            composable(DocMakerAppViews.AUTO_DETAILS_VIEW.name) {
+                                AutoDetailsView(autoDetails) { detail, value ->
+                                    viewModel.updateAutoDetails(detail, value)
+                                    //TODO(debug)
                                 }
-                            )
-                        }
-                        composable(DocMakerAppViews.DOC_SHARE_LIST_VIEW.name) {
-                            DocShareListView(viewModel = viewModel)
-                        }
-                        composable(DocMakerAppViews.AUTO_DETAILS_VIEW.name) {
-                            AutoDetailsView(autoDetails) { detail, value ->
-                                viewModel.updateAutoDetails(detail, value)
-                                //TODO(debug)
                             }
                         }
                     }
-                }
-            )
+                )
+            }
         }
     }
 }
@@ -201,18 +208,15 @@ fun DocMakerSideMenu(
 
 
 @Composable
-fun DraftAlertDialog(
+fun DraftPickNameDialog(
     shouldShowDialog: Boolean,
     onDismissRequest: () -> Unit,
-    onSubmitted: (String) -> Unit
+    onSubmitted: (String) -> Unit,
+    previousName: String = ""
     ) {
     if (!shouldShowDialog) return
     val context = LocalContext.current
-    var text by remember { mutableStateOf("") }
-    val onDismissRequestWrapped = {
-        onDismissRequest()
-        text = ""
-    }
+    var text by remember { mutableStateOf(previousName) }
     val onSubmitWithValidityCheck = { str: String ->
         var submittedName: String = str
         submittedName.trim().also { submittedName = it }
@@ -226,7 +230,10 @@ fun DraftAlertDialog(
     }
 
     Dialog(
-        onDismissRequest = onDismissRequestWrapped,
+        onDismissRequest = {
+            onDismissRequest()
+            text = ""
+        },
         properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true),
     ) {
         Surface(
@@ -330,7 +337,9 @@ fun AnimatedFab(
                 ) {
                     Text(
                         text = stringResource(R.string.fab_add_new_draft),
-                        modifier = Modifier.padding(start = 8.dp).width(fabWidth),
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .width(fabWidth),
                         fontWeight = docAppTextStyles["fab"]?.fontWeight,
                         color = docAppTextStyles["fab"]?.color ?: Color.Black,
                         softWrap = false,

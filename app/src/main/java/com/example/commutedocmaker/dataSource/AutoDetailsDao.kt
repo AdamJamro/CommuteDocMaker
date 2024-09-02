@@ -1,9 +1,6 @@
 package com.example.commutedocmaker.dataSource
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -13,6 +10,9 @@ interface AutoDetailsDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(details: AutoDetailsData)
+
+    @Update
+    suspend fun update(details: AutoDetailsData)
 
     @Query("SELECT * FROM auto_details_table WHERE id = :id")
     suspend fun getAutoDetailsById(id: Int): AutoDetailsData?

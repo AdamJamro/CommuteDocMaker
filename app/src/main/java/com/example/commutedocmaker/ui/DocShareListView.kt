@@ -52,10 +52,10 @@ fun DocShareListView (
                             .fillMaxSize()
                             .height(48.dp)
                             .padding(8.dp),
-                        text = if (item.content.length > (40 - 3 / 2 * item.title.length)) {
-                            item.content.subSequence(0, 40 - 3 / 2 * item.title.length).toString() + "..."
+                        text = if (item.contentDescription.length > (40 - 3 / 2 * item.title.length)) {
+                            item.contentDescription.subSequence(0, 40 - 3 / 2 * item.title.length).toString() + "..."
                         } else {
-                            item.content
+                            item.contentDescription
                         },
                         textAlign = TextAlign.Center,
                         fontSize = Typography.titleSmall.fontSize,

@@ -336,8 +336,8 @@ fun ToggleButton(
         containerColor = if (isSelected) md_theme_light_primary else Color.Gray
     ),
     elevation: ButtonElevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 12.dp,
-            pressedElevation = 6.dp,
+            defaultElevation = 4.dp,
+            pressedElevation = 12.dp,
             disabledElevation = 0.dp
     ),
     shape: Shape = RoundedCornerShape(16.dp)
@@ -488,7 +488,7 @@ fun CommuteClockTimeRangeSlider(
                     .height(25.dp),
                 shape = RoundedCornerShape(16.dp),
                 color = color,
-                shadowElevation = 15.dp
+                shadowElevation = 6.dp
             ) {
                 Text(
                     text = convertToStringTime(sliderPosition.value.start),
@@ -518,7 +518,7 @@ fun CommuteClockTimeRangeSlider(
                     .height(25.dp),
                 shape = RoundedCornerShape(16.dp),
                 color = color,
-                shadowElevation = 15.dp
+                shadowElevation = 6.dp
             ) {
                 Text(
                     text = convertToStringTime(sliderPosition.value.endInclusive),
