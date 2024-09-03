@@ -1,4 +1,4 @@
-package com.example.commutedocmaker.dataSource
+package com.example.commutedocmaker.dataSource.draftEntry
 
 import java.io.Serializable
 import androidx.room.ColumnInfo

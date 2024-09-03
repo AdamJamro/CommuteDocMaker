@@ -1,4 +1,4 @@
-package com.example.commutedocmaker.dataSource
+package com.example.commutedocmaker.dataSource.autoDetailsData
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow

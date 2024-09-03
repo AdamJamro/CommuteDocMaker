@@ -6,12 +6,11 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.lifecycleScope
-import com.example.commutedocmaker.dataSource.DraftEntry
+import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
 import com.example.commutedocmaker.ui.viewModels.DocMakerAppViewModel
 import com.example.commutedocmaker.ui.viewModels.DocMakerAppViewModelFactory
 import com.example.cupcake.ui.theme.CommuteDocMakerTheme
@@ -24,6 +23,7 @@ class MainActivity : ComponentActivity() {
                 SavedStateHandle(),
                 (application as CommuteDocApplication).draftRepository,
                 (application as CommuteDocApplication).autoDetailsRepository,
+                (application as CommuteDocApplication).preferenceRepository,
                 lifecycleScope
             )
         }

@@ -7,9 +7,16 @@ import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.commutedocmaker.dataSource.DraftEntry
+import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
+import com.example.commutedocmaker.dataSource.preference.PreferenceType
+import com.example.commutedocmaker.dataSource.preference.PreferenceType.ACCESS.DENIED
+import com.example.commutedocmaker.dataSource.preference.PreferenceType.ACCESS.GRANTED
 import com.example.commutedocmaker.ui.DraftEditorView
 import com.example.commutedocmaker.ui.viewModels.DraftEditorViewModelFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class DraftEditorActivity : ComponentActivity() {
     private lateinit var viewModelFactory: DraftEditorViewModelFactory
@@ -35,18 +42,39 @@ class DraftEditorActivity : ComponentActivity() {
                 viewModel = viewModel(factory = viewModelFactory),
                 onFinishActivity = { resultCode: Int,
                                      draft: DraftEntry? ->
-                    intent.apply {
-                        putExtra("draft_raw", draft)
+                    lifecycleScope.launch {
+                        intent.apply {
+                            putExtra("draft_raw", draft)
 //                        putExtra("draft_index", draftIndex)
+                        }
+                        if(verifyUserAccess()) {
+                            setResult(
+                                resultCode,
+                                intent
+                            )
+                        } else {
+                            setResult(RESULT_CANCELED)
+                        }
+
+                        withContext(Dispatchers.Main) {
+                            if(isActive)
+                                finish()
+                        }
                     }
-                    setResult(
-                        resultCode,
-                        intent
-                    )
-                    finish()
                 }
             )
         }
+    }
+
+    private suspend fun verifyUserAccess(): Boolean {
+        (application as CommuteDocApplication)
+            .preferenceRepository
+            .getPreference(PreferenceType.ACCESS.key)?.let {
+                if(it == DENIED) {
+                    return false
+                }
+            }
+        return true
     }
 }
 

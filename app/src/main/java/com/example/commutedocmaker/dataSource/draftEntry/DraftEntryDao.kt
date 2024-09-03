@@ -1,4 +1,4 @@
-package com.example.commutedocmaker.dataSource
+package com.example.commutedocmaker.dataSource.draftEntry
 
 import androidx.room.Dao
 import androidx.room.Insert

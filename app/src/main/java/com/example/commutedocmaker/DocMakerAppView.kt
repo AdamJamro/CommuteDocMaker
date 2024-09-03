@@ -25,7 +25,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.commutedocmaker.dataSource.DraftEntry
+import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
 import com.example.commutedocmaker.ui.AutoDetailsView
 import com.example.commutedocmaker.ui.DocMakerAppLoadingView
 import com.example.commutedocmaker.ui.DocShareListView
@@ -130,7 +130,7 @@ fun DocMakerAppView(
                             composable(DocMakerAppViews.DRAFT_LIST_VIEW.name) {
                                 DraftListView(
                                     draftItems = draftEntries,
-                                    onEditDraft = { draftData: DraftEntry->
+                                    onEditDraft = { draftData: DraftEntry ->
                                         onOpenDraftEditor(
                                             draftData.title,
                                             draftData,

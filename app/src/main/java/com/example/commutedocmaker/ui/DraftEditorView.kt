@@ -3,13 +3,10 @@ package com.example.commutedocmaker.ui
 import android.app.Activity.RESULT_OK
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.*
@@ -21,18 +18,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.commutedocmaker.DraftPickNameDialog
 import com.example.commutedocmaker.R
-import com.example.commutedocmaker.dataSource.DraftDataPatch
-import com.example.commutedocmaker.dataSource.DraftEntry
+import com.example.commutedocmaker.dataSource.draftEntry.DraftDataPatch
+import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
 import com.example.commutedocmaker.ui.viewModels.DraftEditorViewModel
 import kotlin.math.floor
 import com.example.commutedocmaker.ui.uiUtils.DatePickerDialog
 import com.example.commutedocmaker.ui.uiUtils.CommuteClockTimeRangeSliderWrapper
 import com.example.commutedocmaker.ui.viewModels.DraftEditorEvent.*
 import com.example.commutedocmaker.ui.theme.Typography
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @Composable
 fun DraftEditorView (

@@ -6,8 +6,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.commutedocmaker.dataSource.DraftDataPatch
-import com.example.commutedocmaker.dataSource.DraftEntry
+import com.example.commutedocmaker.dataSource.draftEntry.DraftDataPatch
+import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
 import com.example.commutedocmaker.ui.viewModels.DraftEditorEvent.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow

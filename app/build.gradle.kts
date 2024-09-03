@@ -76,6 +76,9 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
 
     implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.4")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.10")
+    implementation("org.apache.poi:poi:5.2.4")
+    implementation("org.apache.poi:poi-ooxml:5.2.4")
 
     // Room components
     val roomVersion = "2.6.1"

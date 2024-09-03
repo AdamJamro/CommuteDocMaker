@@ -1,17 +1,15 @@
 package com.example.commutedocmaker.ui
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.Typography
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.commutedocmaker.R
-import com.example.commutedocmaker.dataSource.Details
+import com.example.commutedocmaker.dataSource.autoDetailsData.Details
 import com.example.commutedocmaker.stringResource
 import com.example.commutedocmaker.ui.theme.Typography
 

@@ -23,4 +23,23 @@
     <string name="hide">Zwiń</string>
     <string name="auto_details_view_title">Dane Pojazdu i Właściciela</string>
     <string name="create_new_data_patach_label">Dodaj nową zmianę</string>
+    <string name="routes_sheet_name">Przejazdy</string>
+    <string name="sheet_commute_reason">stawka</string>
+    <string name="sheet_distance_travelled">ilosc</string>
+    <string name="sheet_euro_per_km_rate">stawkaw</string>
+    <string name="sheet_total_euro">koszt</string>
+    <string name="sheet_tab">rachuneklp</string>
+    <string name="sheet_commute_type">srlokmocji</string>
+    <string name="sheet_vehicle">pojazd</string>
+    <string name="sheet_vehicle_registration">nrrejpoj</string>
+    <string name="sheet_description">opisprzejazd</string>
+    <string name="sheet_full_route">trasa</string>
+    <string name="sheet_departure_datetime">dataw</string>
+    <string name="sheet_arrival_datetime">datap</string>
+    <string name="sheet_departure_country">kraj</string>
+    <string name="sheet_arrival_country">krajdocelowy</string>
+    <string name="sheet_tab2">powrot</string>
+    <string name="sheet_tab3">datag</string>
+    <string name="sheet_tab4">czasint</string>
+    <string name="sheet_entry">lp</string>
 </resources>

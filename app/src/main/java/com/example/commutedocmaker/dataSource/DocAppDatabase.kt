@@ -1,8 +1,17 @@
 package com.example.commutedocmaker.dataSource
 
 import android.content.Context
+import android.util.Log
 import androidx.room.*
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.commutedocmaker.dataSource.autoDetailsData.AutoDetailsDao
+import com.example.commutedocmaker.dataSource.autoDetailsData.AutoDetailsData
+import com.example.commutedocmaker.dataSource.draftEntry.DraftDataPatch
+import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
+import com.example.commutedocmaker.dataSource.draftEntry.DraftEntryDao
+import com.example.commutedocmaker.dataSource.preference.Preference
+import com.example.commutedocmaker.dataSource.preference.PreferenceDao
+import com.example.commutedocmaker.dataSource.preference.PreferenceType
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CoroutineScope
@@ -11,6 +20,7 @@ import kotlinx.coroutines.launch
 import java.lang.reflect.Type
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import kotlin.reflect.KClass
 
 class Converters {
     private val gson: Gson
@@ -60,11 +70,18 @@ class LocalDateAdapter : JsonSerializer<LocalDate>, JsonDeserializer<LocalDate> 
     }
 }
 
-@Database(entities = [DraftEntry::class, AutoDetailsData::class], version = 1)
+@Database(
+    entities = [
+        DraftEntry::class,
+        AutoDetailsData::class,
+        Preference::class
+    ],
+    version = 1)
 @TypeConverters(Converters::class)
 abstract class DocAppDatabase : RoomDatabase() {
     abstract fun draftEntryDao(): DraftEntryDao
     abstract fun autoDetailsDao(): AutoDetailsDao
+    abstract fun preferenceDao(): PreferenceDao
 
     companion object {
         private var INSTANCE: DocAppDatabase? = null
@@ -74,10 +91,13 @@ abstract class DocAppDatabase : RoomDatabase() {
             scope: CoroutineScope
         ): DocAppDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(context.applicationContext,
-                    DocAppDatabase::class.java, "draftApp.db")
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    DocAppDatabase::class.java,
+                    "draftApp.db"
+                )
                     .fallbackToDestructiveMigration()
-//                    .addCallback(DatabaseCallback(scope))
+                    .addCallback(DatabaseCallback(scope))
                     .build()
                 INSTANCE = instance
                 //return
@@ -85,6 +105,10 @@ abstract class DocAppDatabase : RoomDatabase() {
             }
         }
         fun destroyInstance() {
+            if(INSTANCE?.isOpen == true) {
+                INSTANCE?.close()
+            }
+
             INSTANCE = null
         }
     }
@@ -92,12 +116,20 @@ abstract class DocAppDatabase : RoomDatabase() {
     private class DatabaseCallback(private val scope: CoroutineScope) : RoomDatabase.Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
-            if (INSTANCE == null) return
 
-            INSTANCE.let { database ->
-                scope.launch {
-                    INSTANCE?.draftEntryDao()?.getAllDrafts()?.toList()?.isEmpty() ?: return@launch
-                        populateDatabase(database!!.draftEntryDao())
+            INSTANCE?.let { database ->
+                for (preference in PreferenceType::class.sealedSubclasses) {
+
+                    preference.simpleName
+                        ?.let {
+                            Log.d("DEBUG", "DatabaseCallback.onCreate: inserting preference $it")
+                            Preference(it, "")
+                        }
+                        ?.let {
+                            scope.launch {
+                                database.preferenceDao().insertPreference(it)
+                            }
+                        }
                 }
             }
         }

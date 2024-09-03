@@ -1,6 +1,4 @@
-package com.example.commutedocmaker.dataSource
-
-import kotlinx.coroutines.flow.Flow
+package com.example.commutedocmaker.dataSource.autoDetailsData
 
 class AutoDetailsRepository(private val dao: AutoDetailsDao) {
     val allAutoDetails = dao.getAllAutoDetails()

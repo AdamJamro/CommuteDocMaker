@@ -5,7 +5,11 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.*
-import com.example.commutedocmaker.dataSource.*
+import com.example.commutedocmaker.dataSource.autoDetailsData.AutoDetailsRepository
+import com.example.commutedocmaker.dataSource.autoDetailsData.Details
+import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
+import com.example.commutedocmaker.dataSource.draftEntry.DraftRepository
+import com.example.commutedocmaker.dataSource.preference.PreferenceRepository
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.math.min
@@ -14,6 +18,7 @@ class DocMakerAppViewModel(
     private val savedStateHandle: SavedStateHandle,
     private val draftRepository: DraftRepository,
     private val autoDetailsRepository: AutoDetailsRepository,
+    private val preferenceRepository: PreferenceRepository,
     injectScope: CoroutineScope? = null
 ) : ViewModel() {
     companion object {
@@ -43,7 +48,7 @@ class DocMakerAppViewModel(
     init {
         scope.launch {
             val fixedMinimumLoadTimeHandler = launch {
-                delay(1000)
+                delay(1300)
             }
             try {
                 _entries.update {
@@ -217,18 +222,26 @@ class DocMakerAppViewModel(
                 .also { it[detail.ordinal] = value }
                 .toList()
         _autoDetails.update { newValue }
+
         Log.d("DEBUG", "updated auto details ${_autoDetails.value}")
     }
 
     fun updateAutoDetails(detailList: List<String>) {
         _autoDetails.update { detailList }
     }
+
+    fun generateDocument(draftEntry: DraftEntry): Boolean {
+        //TODO
+        return true
+    }
+
 }
 
 class DocMakerAppViewModelFactory(
     private val savedStateHandle: SavedStateHandle,
     private val draftRepository: DraftRepository,
     private val autoDetailsRepository: AutoDetailsRepository,
+    private val preferenceRepository: PreferenceRepository,
     private val scope: CoroutineScope? = null
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -238,6 +251,7 @@ class DocMakerAppViewModelFactory(
                 savedStateHandle,
                 draftRepository,
                 autoDetailsRepository,
+                preferenceRepository,
                 scope
             ) as T
         }

@@ -1,10 +1,9 @@
-package com.example.commutedocmaker.dataSource
+package com.example.commutedocmaker.dataSource.autoDetailsData
 
 import androidx.annotation.StringRes
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.TypeConverter
 import com.example.commutedocmaker.R
 
 enum class Details(@StringRes val id: Int = 0) {

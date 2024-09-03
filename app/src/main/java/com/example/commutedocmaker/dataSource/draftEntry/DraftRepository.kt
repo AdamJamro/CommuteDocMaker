@@ -1,4 +1,4 @@
-package com.example.commutedocmaker.dataSource
+package com.example.commutedocmaker.dataSource.draftEntry
 
 class DraftRepository(private val draftEntryDao: DraftEntryDao) {
     val allDrafts = draftEntryDao.getAllDrafts()
