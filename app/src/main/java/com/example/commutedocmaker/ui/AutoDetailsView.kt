@@ -1,15 +1,13 @@
 package com.example.commutedocmaker.ui
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.commutedocmaker.R
-import com.example.commutedocmaker.dataSource.autoDetailsData.Details
+import com.example.commutedocmaker.dataSource.autoDetails.Details
 import com.example.commutedocmaker.stringResource
 import com.example.commutedocmaker.ui.theme.Typography
 
@@ -36,6 +34,14 @@ fun AutoDetailsView(
         )
 
         details.forEachIndexed { index, detail ->
+            if (index == 3) {
+                Spacer(Modifier.size(16.dp))
+                Text(
+                    text = stringResource(R.string.auto_details_view_subtitle),
+                    modifier = Modifier.fillMaxWidth(),
+                    style = Typography.titleLarge
+                )
+            }
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = detail.value,

@@ -1,66 +1,185 @@
 package com.example.commutedocmaker.ui
 
+import android.annotation.SuppressLint
+import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.commutedocmaker.R
+import com.example.commutedocmaker.dataSource.document.Document
 import com.example.commutedocmaker.ui.viewModels.DocMakerAppViewModel
 import com.example.commutedocmaker.ui.theme.Typography
 
+@SuppressLint("UnrememberedMutableInteractionSource")
 @Composable
 fun DocShareListView (
-    viewModel: DocMakerAppViewModel
+    viewModel: DocMakerAppViewModel,
+    onDocClick: (Document) -> Unit,
 //    fileItem: List<DraftEntry>
 ) {
-    val fileItems = viewModel.entries.collectAsState()
+    val documents: State<List<Document>> = viewModel.documents.collectAsState()
+    var expandedIndex by remember { mutableIntStateOf(-1) }
+    var showConfirmDialog by remember { mutableStateOf(false) }
+    val interactionSource by remember { mutableStateOf(MutableInteractionSource()) }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        items(fileItems.value) { item ->
-            Surface(
-                    modifier = Modifier
-                        .fillParentMaxWidth()
-                        .padding(8.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    tonalElevation = 1.dp,
-                    shadowElevation = 2.dp,
-                    onClick = { /* Handle item click */ }
-                ) {
-                Row {
-                    Text(
+    if (documents.value.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.LightGray),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = stringResource(R.string.empty_box),
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(8.dp),
+                textAlign = TextAlign.Center,
+                fontSize = Typography.titleMedium.fontSize,
+                fontStyle = Typography.titleMedium.fontStyle,
+                fontWeight = FontWeight.Light
+            )
+        }
+    }
+    else {
+        if (showConfirmDialog) {
+            AlertDialog(
+                title = { Text(stringResource(R.string.delete_document)) },
+                onDismissRequest = { showConfirmDialog = false },
+                confirmButton = {
+                    Button(onClick = {
+                        viewModel.deleteDocument(documents.value[expandedIndex])
+                        showConfirmDialog = false
+                    }) {
+                        Text(text = stringResource(R.string.delete))
+                    }
+                },
+                dismissButton = {
+                    Button(onClick = {
+                        showConfirmDialog = false
+                        expandedIndex = -1
+                    }) {
+                        Text(text = stringResource(R.string.cancel))
+                    }
+
+                },
+            )
+        }
+        
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(6.dp)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = {
+                        expandedIndex = -1
+                        Log.d("DEBUG", "expandedIndex: $expandedIndex")
+                    })
+                .background(Color.Transparent),
+        ) {
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                itemsIndexed(documents.value) { index, item ->
+                    Surface(
                         modifier = Modifier
-                            .wrapContentSize()
-                            .height(48.dp)
-                            .padding(8.dp),
-                        text = item.title,
-                        textAlign = TextAlign.Center,
-                        fontSize = Typography.titleMedium.fontSize,
-                        fontStyle = Typography.titleMedium.fontStyle,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .height(48.dp)
-                            .padding(8.dp),
-                        text = if (item.contentDescription.length > (40 - 3 / 2 * item.title.length)) {
-                            item.contentDescription.subSequence(0, 40 - 3 / 2 * item.title.length).toString() + "..."
-                        } else {
-                            item.contentDescription
-                        },
-                        textAlign = TextAlign.Center,
-                        fontSize = Typography.titleSmall.fontSize,
-                        fontStyle = Typography.titleSmall.fontStyle
-                    )
+                            .fillParentMaxWidth()
+                            .padding(4.dp)
+                            .animateItem(),
+                        shape = MaterialTheme.shapes.medium,
+                        tonalElevation = 1.dp,
+                        shadowElevation = 2.dp,
+                        onClick = {
+                            if (expandedIndex == index) {
+                                onDocClick(item)
+                            }
+                            expandedIndex = index
+                        }
+                    ) {
+                        Column {
+                            Row {
+                                Text(
+                                    modifier = Modifier
+                                        .padding(6.dp),
+                                    text = item.title,
+                                    textAlign = TextAlign.Center,
+                                    fontSize = Typography.titleLarge.fontSize * 0.75,
+                                    fontStyle = Typography.titleMedium.fontStyle,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(Modifier.weight(1f))
+                                Text(
+                                    modifier = Modifier
+                                        .padding(8.dp),
+                                    text = item.date.toString(),
+                                    textAlign = TextAlign.Center,
+                                    fontSize = Typography.titleSmall.fontSize,
+                                    fontStyle = Typography.titleSmall.fontStyle,
+                                    fontWeight = FontWeight.ExtraLight,
+                                    color = Color.Black
+                                )
+                            }
+
+                            AnimatedVisibility(visible = expandedIndex == index) {
+                                Column{
+                                    item.documentSummaryInformation?.also {
+                                        for (information in
+                                        listOf(
+                                            "${stringResource(R.string.period)}: ${it.dayRange} - ${it.month}",
+                                            "${stringResource(R.string.amount_of_transfers)}: ${it.amountOfTransfers}",
+                                            "${stringResource(R.string.payable_amount)}: ${it.payableAmount}€"
+                                        )
+                                        ) {
+                                            Text(
+                                                modifier = Modifier
+                                                    .fillParentMaxWidth()
+                                                    .padding(2.dp),
+                                                textAlign = TextAlign.Center,
+                                                text = information,
+                                                softWrap = true,
+                                            )
+                                        }
+                                    }
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                    ) {
+                                        Button(onClick = { onDocClick(item) }) {
+                                            Text(text = stringResource(R.string.share_doc))
+                                        }
+                                        Button(onClick = { showConfirmDialog = true }) {
+                                            Text(text = stringResource(R.string.delete))
+                                        }
+                                        Button(onClick = { expandedIndex = -1 }) {
+                                            Text(text = stringResource(R.string.collapse))
+
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -13,7 +13,7 @@ sealed class PreferenceType(val key: String) {
 @Entity(tableName = "app_preferences")
 data class Preference(
     @PrimaryKey @ColumnInfo(name = "primary_key") val key: String,
-    @ColumnInfo(name = "value") val value: String
+    @ColumnInfo(name = "value") var value: String
 )
 
 @Dao

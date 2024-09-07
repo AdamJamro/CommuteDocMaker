@@ -1,27 +1,27 @@
-package com.example.commutedocmaker.dataSource.autoDetailsData
+package com.example.commutedocmaker.dataSource.autoDetails
 
 class AutoDetailsRepository(private val dao: AutoDetailsDao) {
     val allAutoDetails = dao.getAllAutoDetails()
 
     suspend fun insert(details: List<String>) {
         if (details.size <= Details.entries.size) {
-            dao.insert(AutoDetailsData(id = 0, details = details))
+            dao.insert(AutoDetails(id = 0, details = details))
         }
         else {
             throw IllegalArgumentException("Details list size must be equal to ${Details.entries.size}")
         }
     }
 
-    private suspend fun update(autoDetails: AutoDetailsData) {
+    private suspend fun update(autoDetails: AutoDetails) {
         dao.update(autoDetails)
     }
 
 
-    suspend fun getById(autoDetailsId: Int): AutoDetailsData? {
-        return dao.getAutoDetailsById(autoDetailsId)
+    suspend fun get(): AutoDetails? {
+        return dao.getAutoDetailsById(0)
     }
 
-    suspend fun delete(autoDetails: AutoDetailsData) {
+    suspend fun delete(autoDetails: AutoDetails) {
         dao.deleteById(autoDetails.id)
     }
 

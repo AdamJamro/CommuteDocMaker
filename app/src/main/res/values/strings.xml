@@ -20,8 +20,8 @@
     <string name="motor_capacity">Pojemność silnika</string>
     <string name="registration_number">Numer rejestracyjny</string>
     <string name="fab_add_new_draft">Dodaj Nowy Dokument</string>
-    <string name="hide">Zwiń</string>
-    <string name="auto_details_view_title">Dane Pojazdu i Właściciela</string>
+    <string name="collapse">Zwiń</string>
+    <string name="auto_details_view_title">Dane Właściciela Pojazdu</string>
     <string name="create_new_data_patach_label">Dodaj nową zmianę</string>
     <string name="routes_sheet_name">Przejazdy</string>
     <string name="sheet_commute_reason">stawka</string>
@@ -42,4 +42,18 @@
     <string name="sheet_tab3">datag</string>
     <string name="sheet_tab4">czasint</string>
     <string name="sheet_entry">lp</string>
+    <string name="auto_details_view_subtitle">Dane Pojazdu</string>
+    <string name="empty_box">Ten folder jest pusty!</string>
+    <string name="share_doc">Udostępnij Dokument</string>
+    <string name="amount_of_transfers">Całkowita ilość przejazdów</string>
+    <string name="payable_amount">Zwrot kosztów</string>
+    <string name="period">Okres</string>
+    <string name="delete_document">Czy chcesz usunąć dokument?</string>
+    <string name="cash_per_kilometer_string_representation">stawka</string>
+    <string name="per_default_route">1 osoba/Dojazd/Zjazd/Zmiana Projektu</string>
+    <string name="per_one_person">sam kierowca</string>
+    <string name="per_two_people">2 osoby</string>
+    <string name="per_three_people">3 osoby</string>
+    <string name="per_four_people">4 osoby</string>
+    <string name="per_five_people">5 osób</string>
 </resources>

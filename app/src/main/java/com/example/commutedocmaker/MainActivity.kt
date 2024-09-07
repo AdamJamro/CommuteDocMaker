@@ -1,6 +1,7 @@
 package com.example.commutedocmaker
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -10,7 +11,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.lifecycleScope
+import com.example.commutedocmaker.dataSource.document.Document
 import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
+import com.example.commutedocmaker.dataSource.preference.PreferenceType
+import com.example.commutedocmaker.dataSource.preference.PreferenceType.ACCESS.GRANTED
 import com.example.commutedocmaker.ui.viewModels.DocMakerAppViewModel
 import com.example.commutedocmaker.ui.viewModels.DocMakerAppViewModelFactory
 import com.example.cupcake.ui.theme.CommuteDocMakerTheme
@@ -24,6 +28,7 @@ class MainActivity : ComponentActivity() {
                 (application as CommuteDocApplication).draftRepository,
                 (application as CommuteDocApplication).autoDetailsRepository,
                 (application as CommuteDocApplication).preferenceRepository,
+                (application as CommuteDocApplication).documentRepository,
                 lifecycleScope
             )
         }
@@ -43,20 +48,47 @@ class MainActivity : ComponentActivity() {
                                           draftData: DraftEntry?,
                                           draftIndex: Int ->
                         //debug
-                        draftData?.let {
-                            if (it.draftDataPatches.isNotEmpty()) {
-                                Log.d("DEBUG", "launchDraftEditor: draftData: $it " +
-                                        "\n${it.title} " +
-                                        "\n${it.draftDataPatches.first()}" +
-                                        "\n${it.draftDataPatches.first().dates}")
+                        draftData?.apply {
+                            if (draftDataPatches.isNotEmpty()) {
+                                Log.d("DEBUG", "launchDraftEditor: draftData: $this " +
+                                        "\n${title} " +
+                                        "\n${draftDataPatches.first()}" +
+                                        "\n${draftDataPatches.first().dates}")
                             }
                             else
-                                Log.d("DEBUG", "launchDraftEditor: draftData: $it " +
-                                        "\n${it.title} ")
+                                Log.d("DEBUG", "launchDraftEditor: draftData: $this " +
+                                        "\n${title} ")
                         }
 
                         launchDraftEditor(draftTitle, draftData)
                         vm.updateCurrentDraftPos(draftIndex)
+                    },
+                    onSendDocument = { document: Document ->
+                        val excelUri: Uri = vm.getFileUri(document.path, applicationContext)
+                        val shareIntent: Intent = Intent().apply {
+                            action = Intent.ACTION_SEND
+                            putExtra(Intent.EXTRA_STREAM, excelUri)
+                            type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        startActivity(Intent.createChooser(shareIntent, stringRes(this, R.string.share_doc)))
+                    },
+                    onGenerateDocument = { draft: DraftEntry ->
+                        vm.updateDatabase()
+                        Toast.makeText(this, "Generating doc...", Toast.LENGTH_SHORT).show()
+                        var document: Document? = null
+                        vm.getPreference(PreferenceType.ACCESS)?.also {
+                            if (it == GRANTED) {
+                                document = vm.generateDocument(draft, applicationContext)
+                            }
+                        }
+                        val result = document != null
+                        val response =
+                            if (result) "Document generated successfully"
+                            else "Document generation failed"
+                        Toast.makeText(this, response, Toast.LENGTH_SHORT).show()
+                        //return
+                        result
                     }
                 )
             }

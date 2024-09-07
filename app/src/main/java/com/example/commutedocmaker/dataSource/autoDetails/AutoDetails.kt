@@ -1,4 +1,4 @@
-package com.example.commutedocmaker.dataSource.autoDetailsData
+package com.example.commutedocmaker.dataSource.autoDetails
 
 import androidx.annotation.StringRes
 import androidx.room.ColumnInfo
@@ -17,7 +17,7 @@ enum class Details(@StringRes val id: Int = 0) {
 }
 
 @Entity(tableName = "auto_details_table")
-data class AutoDetailsData(
-    @PrimaryKey(autoGenerate = false) var id: Int = 0,
+data class AutoDetails(
+    @PrimaryKey(autoGenerate = false) val id: Int = 0,
     @ColumnInfo(name = "details") var details: List<String> = List(Details.entries.size) { "" }
 )

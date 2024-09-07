@@ -1,10 +1,14 @@
 package com.example.commutedocmaker
 
+
 import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -35,6 +39,18 @@ import com.example.commutedocmaker.ui.theme.docAppTextStyles
 import com.example.commutedocmaker.ui.viewModels.DocMakerAppViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import androidx.wear.compose.material.ExperimentalWearMaterialApi
+import androidx.wear.compose.material.FractionalThreshold
+import androidx.wear.compose.material.rememberSwipeableState
+import androidx.wear.compose.material.swipeable
+import com.example.commutedocmaker.DocMakerAppViews.DOC_SHARE_LIST_VIEW
+import com.example.commutedocmaker.dataSource.document.Document
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 enum class DocMakerAppViews {
     DRAFT_LIST_VIEW,
@@ -42,6 +58,7 @@ enum class DocMakerAppViews {
     AUTO_DETAILS_VIEW
 }
 
+@OptIn(ExperimentalWearMaterialApi::class)
 @Composable
 fun DocMakerAppView(
     viewModel: DocMakerAppViewModel,
@@ -52,6 +69,8 @@ fun DocMakerAppView(
         draftData: DraftEntry?,
         draftIndex: Int
             ) -> Unit,
+    onSendDocument: (Document) -> Unit,
+    onGenerateDocument: (DraftEntry) -> Boolean,
     navController: NavHostController = rememberNavController()
 ) {
 
@@ -84,8 +103,8 @@ fun DocMakerAppView(
         targetState = showLoadingAnimation,
         label = "mainAppViewWrap",
         transitionSpec = {
-            fadeIn(animationSpec = tween(100)) togetherWith
-                    fadeOut(animationSpec = tween(1000))
+            fadeIn(animationSpec = tween(500)) togetherWith
+                    fadeOut(animationSpec = tween(1500))
         }
     ) { targetState->
         if (targetState)
@@ -99,7 +118,7 @@ fun DocMakerAppView(
                     scope.launch { drawerState.close() }
                 },
                 onClickDocShareListScreen = {
-                    navController.navigate(DocMakerAppViews.DOC_SHARE_LIST_VIEW.name)
+                    navController.navigate(DOC_SHARE_LIST_VIEW.name)
                     scope.launch { drawerState.close() }
                 },
                 onClickAutoDetails = {
@@ -121,9 +140,10 @@ fun DocMakerAppView(
                     content = { contentPadding ->
 //                var uiState: CommuteDocMakerScreenState by remember { mutableStateOf(CommuteDocMakerScreenState()) }
 
-
                         NavHost(
-                            modifier = Modifier.padding(contentPadding),
+                            modifier = Modifier
+                                .padding(contentPadding)
+                                .fillMaxSize(),
                             navController = navController,
                             startDestination = startScreen.name,
                         ) {
@@ -138,20 +158,26 @@ fun DocMakerAppView(
                                         )
                                     },
                                     onGenerateDoc = { draftData: DraftEntry ->
-                                        //TODO
+                                        if (onGenerateDocument(draftData)) {
+                                            navController.navigate(DOC_SHARE_LIST_VIEW.name)
+                                        }
                                     },
                                     onDeleteDraft = { draftData: DraftEntry ->
                                         viewModel.deleteEntry(context, draftData)
                                     }
                                 )
                             }
-                            composable(DocMakerAppViews.DOC_SHARE_LIST_VIEW.name) {
-                                DocShareListView(viewModel = viewModel)
+                            composable(DOC_SHARE_LIST_VIEW.name) {
+                                DocShareListView(
+                                    viewModel = viewModel,
+                                    onDocClick = { document ->
+                                        onSendDocument(document)
+                                    }
+                                )
                             }
                             composable(DocMakerAppViews.AUTO_DETAILS_VIEW.name) {
                                 AutoDetailsView(autoDetails) { detail, value ->
                                     viewModel.updateAutoDetails(detail, value)
-                                    //TODO(debug)
                                 }
                             }
                         }
@@ -184,7 +210,7 @@ fun DocMakerSideMenu(
                     fontSize = Typography.titleLarge.fontSize
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Divider()
+                HorizontalDivider()
                 NavigationDrawerItem(
                     label = { Text(text = stringResource(id = R.string.drafts_screen_name)) },
                     onClick = onClickHomeScreen,
@@ -193,7 +219,7 @@ fun DocMakerSideMenu(
                 NavigationDrawerItem(
                     label = { Text(text = stringResource(id = R.string.generated_files_screen_name)) },
                     onClick = onClickDocShareListScreen,
-                    selected = currentScreen == DocMakerAppViews.DOC_SHARE_LIST_VIEW
+                    selected = currentScreen == DOC_SHARE_LIST_VIEW
                 )
                 NavigationDrawerItem(
                     label = { Text(text = stringResource(id = R.string.auto_details_screen_name)) },

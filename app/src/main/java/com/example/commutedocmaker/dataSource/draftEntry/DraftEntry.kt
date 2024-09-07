@@ -21,10 +21,10 @@ data class DraftDataPatch(
 data class DraftEntry(
     var title: String,
     var contentDescription: String,
-    var draftDataPatches: List<DraftDataPatch>,
-    var filePath: String = "drafts/${title}.txt"
-) : Serializable {
+    var draftDataPatches: List<DraftDataPatch> = emptyList(),
+    var filePath: String = "files/${title}.txt",
     @PrimaryKey(autoGenerate = false) @ColumnInfo(name = "primary_key") var draftId: Int = 0
+) : Serializable {
     override fun toString(): String {
         return "DraftEntry(title='$title', content='$contentDescription')"
     }

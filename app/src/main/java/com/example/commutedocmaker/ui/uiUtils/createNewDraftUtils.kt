@@ -397,10 +397,11 @@ fun ToggleGroup(
 @Composable
 fun CommuteClockTimeRangeSliderWrapper(
     modifier: Modifier = Modifier,
-    initSliderPosition: ClosedFloatingPointRange<Float>? = null,
+    dayHours: Boolean = true,
+    initSliderPosition: ClosedFloatingPointRange<Float>? = if (dayHours) 24f..64f else 68f..100f,
     onUpdateTimeRange: (startTime: String, endTime: String) -> Unit,
 ) {
-    var dayHoursSelected by remember { mutableStateOf(true) }
+    var dayHoursSelected by remember { mutableStateOf(dayHours) }
 
     Column {
         CommuteClockTimeRangeSlider(
@@ -430,6 +431,7 @@ fun CommuteClockTimeRangeSliderWrapper(
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommuteClockTimeRangeSlider(
     modifier: Modifier = Modifier,
@@ -447,6 +449,7 @@ fun CommuteClockTimeRangeSlider(
     val sliderPosition = remember { mutableStateOf(initSliderPosition ?: valueRange.value) }
     val steps = remember { mutableIntStateOf((valueRange.value.endInclusive - valueRange.value.start).toInt()) }
     val sliderViewHeight by remember { mutableStateOf(80.dp) }
+    val interactionSource = remember { MutableInteractionSource() }
 
     onUpdateRangeConstraints(valueRange, sliderPosition, steps)
 
@@ -458,7 +461,7 @@ fun CommuteClockTimeRangeSlider(
 //            .border(width = 2.dp, color = Color.Red),
     ) {
         RangeSlider(
-            modifier = Modifier.align(Alignment.Center),
+            modifier = Modifier.align(Alignment.Center).height(30.dp),
             value = sliderPosition.value,
             steps = steps.intValue,
             valueRange = valueRange.value,
@@ -467,6 +470,36 @@ fun CommuteClockTimeRangeSlider(
                 onUpdateTimeRange(
                     /*startTime=*/  convertToStringTime(sliderPosition.value.start),
                     /*endTime=*/    convertToStringTime(sliderPosition.value.endInclusive)
+                )
+            },
+            track = { rangeSliderState ->
+                SliderDefaults.Track(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp),
+                    rangeSliderState = rangeSliderState,
+                    colors = SliderDefaults.colors(
+                        activeTrackColor = color.copy(alpha = 0.1f),
+                        activeTickColor = color,
+                        inactiveTrackColor = Color.Black,
+                        inactiveTickColor = Color.Black,
+                    )
+                )
+            },
+            startThumb = {
+                SliderDefaults.Thumb(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .background(color = color, shape = CircleShape),
+                    interactionSource = interactionSource
+                )
+            },
+            endThumb = {
+                SliderDefaults.Thumb(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .background(color = color, shape = CircleShape),
+                    interactionSource = interactionSource
                 )
             }
         )

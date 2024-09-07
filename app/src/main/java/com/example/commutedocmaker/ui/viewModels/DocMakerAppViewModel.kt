@@ -1,17 +1,28 @@
 package com.example.commutedocmaker.ui.viewModels
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.content.FileProvider
 import androidx.lifecycle.*
-import com.example.commutedocmaker.dataSource.autoDetailsData.AutoDetailsRepository
-import com.example.commutedocmaker.dataSource.autoDetailsData.Details
+import com.example.commutedocmaker.dataSource.autoDetails.AutoDetailsRepository
+import com.example.commutedocmaker.dataSource.autoDetails.Details
 import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
 import com.example.commutedocmaker.dataSource.draftEntry.DraftRepository
+import com.example.commutedocmaker.XLSX.XLSXConverter
+import com.example.commutedocmaker.dataSource.document.Document
+import com.example.commutedocmaker.dataSource.document.DocumentRepository
+import com.example.commutedocmaker.dataSource.preference.Preference
 import com.example.commutedocmaker.dataSource.preference.PreferenceRepository
+import com.example.commutedocmaker.dataSource.preference.PreferenceType
+import com.example.commutedocmaker.dataSource.preference.PreferenceType.ACCESS
+import com.example.commutedocmaker.shouldRevokeAccess
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import java.io.File
+import java.time.LocalDate
 import kotlin.math.min
 
 class DocMakerAppViewModel(
@@ -19,11 +30,13 @@ class DocMakerAppViewModel(
     private val draftRepository: DraftRepository,
     private val autoDetailsRepository: AutoDetailsRepository,
     private val preferenceRepository: PreferenceRepository,
+    private val documentRepository: DocumentRepository,
     injectScope: CoroutineScope? = null
 ) : ViewModel() {
     companion object {
         private const val ENTRIES_KEY = "entries"
         private const val AUTO_DETAILS_KEY = "details"
+        private const val DOCUMENTS_KEY = "documents"
 //        private val emptyAutoData = AutoDetailsData(
 //            id = 0,
 //            details = List(Details.entries.size) { "" }
@@ -33,6 +46,8 @@ class DocMakerAppViewModel(
     private val scope = injectScope ?: viewModelScope
     private val currentlyEditedDraftPos: MutableStateFlow<Int> = MutableStateFlow(-1)
     val isLoading = mutableStateOf(true)
+
+    private val preferences: MutableStateFlow<List<Preference>> = MutableStateFlow(emptyList())
 
     private val _entries = MutableStateFlow<List<DraftEntry>>(
         savedStateHandle[ENTRIES_KEY]
@@ -45,69 +60,113 @@ class DocMakerAppViewModel(
             ?: List(Details.entries.size) { "" })
     val autoDetails: StateFlow<List<String>> = _autoDetails.asStateFlow()
 
+    private val _documents = MutableStateFlow<List<Document>>(
+        savedStateHandle[DOCUMENTS_KEY]
+            ?: emptyList()
+    )
+    val documents: StateFlow<List<Document>> = _documents.asStateFlow()
+
     init {
         scope.launch {
-            val fixedMinimumLoadTimeHandler = launch {
-                delay(1300)
-            }
-            try {
-                _entries.update {
-                    draftRepository.allDrafts.first().sortedBy { it.draftId }
-                }
+            val fixedMinimumLoadTimeHandler = launch { delay(1300) } // for loading screen animation
 
-                Log.d("DEBUG", "DocMakerAppViewModel.init fetched ${autoDetailsRepository.getById(0)}")
-//                val fetchedAutoData = autoDetailsRepository.getById(0)
-//                if (fetchedAutoData != null) {
-//                    _autoDetails.update { fetchedAutoData.details }
-//                    Log.d("DEBUG", "DocMakerAppViewModel.init fetched data from database ${_autoDetails.value}")
-//                } else {
-//                    Log.d("DEBUG", "DocMakerAppViewModel.init did not manage to fetch from database")
-//                }
-                autoDetailsRepository.getById(0)?.let { autoData ->
-                    _autoDetails.update { autoData.details }
-                    Log.d("DEBUG", "DocMakerAppViewModel.init fetched data from database ${_autoDetails.value}")
-                } ?: run {
-                    Log.d("DEBUG", "DocMakerAppViewModel.init did not manage to fetch from database ${_autoDetails.value}")
-                }
-
-            } catch (e: Exception) {
-                Log.i("DEBUG info", "DocMakerAppViewModel.init failed to fetch data from database\n$e")
+            autoDetailsRepository.get()?.let { autoData ->
+                _autoDetails.update { autoData.details }
+                Log.d("DEBUG", "DocMakerAppViewModel.init fetched data from database ${_autoDetails.value}")
+            } ?: run {
+                Log.d("DEBUG", "DocMakerAppViewModel.init did not manage to fetch details from database ${_autoDetails.value}")
             }
 
-            launch {
-                _entries.collectLatest { entries ->
-                    withContext(Dispatchers.Main) {
-                        savedStateHandle[ENTRIES_KEY] = entries
+            draftRepository.allDrafts.firstOrNull()?.sortedBy { it.draftId }?.let { drafts ->
+                Log.d("DEBUG", "DocMakerAppViewModel.init data fetched $drafts")
+                _entries.update { drafts }
+                Log.d("DEBUG", "DocMakerAppViewModel.init fetched data from database ${_entries.value}")
+            } ?: run {
+                Log.d("DEBUG", "DocMakerAppViewModel.init did not manage to fetch drafts from database ${_entries.value}")
+            }
+            preferenceRepository.allPreferences.firstOrNull()?.also { fetchedPreferences ->
+                preferences.update { fetchedPreferences }
+            }
+            documentRepository.allDocuments.firstOrNull()
+                ?.sortedBy { it.date }
+                ?.reversed()
+                ?.also { documents ->
+                _documents.update { documents }
+            }
+
+            for (saveableFlow in
+                listOf(
+                    Pair(_entries, ENTRIES_KEY),
+                    Pair(_autoDetails, AUTO_DETAILS_KEY),
+                    Pair(_documents, DOCUMENTS_KEY)
+                )
+            ) {
+                launch {
+                    saveableFlow.first.collectLatest { data ->
+                        withContext(Dispatchers.Default) {
+                            savedStateHandle[saveableFlow.second] = data
+                        }
                     }
                 }
             }
-            launch {
-                _autoDetails.collectLatest { details ->
-                    withContext(Dispatchers.Main) {
-                        savedStateHandle[AUTO_DETAILS_KEY] = details
-                    }
-                }
-            }
-            if (_entries.value.isEmpty()) {
-                fetchExampleEntries()
-            }
+
             fixedMinimumLoadTimeHandler.join()
             isLoading.value = false
             Log.d("DEBUG", "DocMakerAppViewModel.init finished")
         }
     }
 
+    fun getPreference(requestPreference: PreferenceType): String? {
+        preferences.value.forEach { preference ->
+            if (preference.key == requestPreference.key) {
+                return preference.value
+            }
+        }
+        return null
+    }
+
     fun updateDatabase() {
         runBlocking {
-            draftRepository.deleteAll()
-//            autoDetailsRepository.deleteAll()
-            val entries = _entries.value
-            for (index in entries.indices) {
-                entries[index].draftId = index
-            }
-            draftRepository.insert(entries)
-            autoDetailsRepository.insert(_autoDetails.value)
+            updatePreferencesDatabase()
+            updateDraftDatabase()
+            updateAutoDetailsDatabase()
+            updateDocumentsDatabase()
+//            if (getPreference(ACCESS) == DENIED) {
+//                 TODO: revoke access
+//            }
             Log.d("DEBUG", "updated database auto details ${autoDetailsRepository.allAutoDetails.first().first().details}")
+            Log.d("DEBUG", "updated database entries ${draftRepository.allDrafts.first()}")
+        }
+    }
+
+    private suspend fun updateDraftDatabase() {
+        val entries = _entries.value
+        for (index in entries.indices) {
+            entries[index].draftId = index
+        }
+        draftRepository.deleteAll()
+        draftRepository.insert(entries)
+    }
+
+    private suspend fun updateAutoDetailsDatabase() {
+        autoDetailsRepository.insert(_autoDetails.value)
+    }
+
+    private suspend fun updateDocumentsDatabase() {
+        documentRepository.deleteAll()
+        documentRepository.insert(_documents.value.sortedBy { it.date }.reversed())
+    }
+
+    private suspend fun updatePreferencesDatabase() {
+        for (preference in preferences.value) {
+            when (preference.key){
+                ACCESS.key -> {
+                    if (shouldRevokeAccess(autoDetails.value)) {
+                        preference.value = ACCESS.DENIED
+                    }
+                }
+            }
+            preferenceRepository.updatePreference(preference)
         }
     }
 
@@ -151,11 +210,9 @@ class DocMakerAppViewModel(
         scope.launch {
             var newList = _entries.value.toList()
             newList = listOf(DraftEntry(entryTitle, "", emptyList())) + newList
-            if(!isActive) {
-                return@launch
+            if(isActive) {
+                _entries.update { newList }
             }
-
-            _entries.update { newList }
         }
     }
 
@@ -170,7 +227,7 @@ class DocMakerAppViewModel(
     }
 
     fun updateEntry(index: Int, updatedEntry: DraftEntry): Boolean {
-        var success: Boolean = false
+        var success = false
 
         scope.launch {
             if (index < 0 || index > _entries.value.lastIndex) {
@@ -203,19 +260,6 @@ class DocMakerAppViewModel(
         }
     }
 
-    private fun fetchExampleEntries() {
-        val dummyItems = listOf(
-            DraftEntry("Entry 1", "this is an inside of the first entry content", emptyList()),
-            DraftEntry("Entry 2 a title that is longer", "this is what makes the content of entry number 2", emptyList())
-        )
-        for (draft in dummyItems ) {
-            addEntry(draft)
-        }
-        _entries.update {
-            _entries.value.reversed()
-        }
-    }
-
     fun updateAutoDetails(detail: Details, value: String) {
         val newValue =  _autoDetails.value
                 .toMutableList()
@@ -230,11 +274,32 @@ class DocMakerAppViewModel(
         _autoDetails.update { detailList }
     }
 
-    fun generateDocument(draftEntry: DraftEntry): Boolean {
-        //TODO
-        return true
+    fun deleteDocument(document: Document) {
+        scope.launch {
+            _documents.update { oldDocuments ->
+                oldDocuments.toMutableList().also { it.remove(document) }.toList()
+            }
+        }
     }
 
+    fun generateDocument(draftEntry: DraftEntry, context: Context): Document? {
+        val converter  = XLSXConverter(context)
+        val document: Document? = converter.convertToXLSX(draftEntry)
+        Log.d("DEBUG", "DocMakerAppViewModel.generateDocument: ${document?.path ?: "null"}")
+        if (document != null) {
+            _documents.update { listOf(document) + _documents.value }
+        }
+        return document
+    }
+
+    fun getFileUri(filePath: String, context: Context): Uri {
+        val file = File(filePath)
+        return FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+    }
 }
 
 class DocMakerAppViewModelFactory(
@@ -242,6 +307,7 @@ class DocMakerAppViewModelFactory(
     private val draftRepository: DraftRepository,
     private val autoDetailsRepository: AutoDetailsRepository,
     private val preferenceRepository: PreferenceRepository,
+    private val documentRepository: DocumentRepository,
     private val scope: CoroutineScope? = null
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -252,6 +318,7 @@ class DocMakerAppViewModelFactory(
                 draftRepository,
                 autoDetailsRepository,
                 preferenceRepository,
+                documentRepository,
                 scope
             ) as T
         }

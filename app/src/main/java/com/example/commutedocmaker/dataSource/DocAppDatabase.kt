@@ -4,23 +4,28 @@ import android.content.Context
 import android.util.Log
 import androidx.room.*
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.example.commutedocmaker.dataSource.autoDetailsData.AutoDetailsDao
-import com.example.commutedocmaker.dataSource.autoDetailsData.AutoDetailsData
+import com.example.commutedocmaker.dataSource.autoDetails.AutoDetails
+import com.example.commutedocmaker.dataSource.autoDetails.AutoDetailsDao
+import com.example.commutedocmaker.dataSource.document.Document
+import com.example.commutedocmaker.dataSource.document.DocumentDao
 import com.example.commutedocmaker.dataSource.draftEntry.DraftDataPatch
 import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
 import com.example.commutedocmaker.dataSource.draftEntry.DraftEntryDao
 import com.example.commutedocmaker.dataSource.preference.Preference
 import com.example.commutedocmaker.dataSource.preference.PreferenceDao
 import com.example.commutedocmaker.dataSource.preference.PreferenceType
+import com.example.commutedocmaker.shouldRevokeAccess
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.launch
 import java.lang.reflect.Type
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import kotlin.reflect.KClass
+
 
 class Converters {
     private val gson: Gson
@@ -56,6 +61,38 @@ class Converters {
             gson.fromJson(value, type)
         }
     }
+
+    @TypeConverter
+    fun toDate(value: String?): LocalDate? {
+        return value?.let{
+            val type = object : TypeToken<LocalDate>() {}.type
+            gson.fromJson(value, type)
+        }
+    }
+
+    @TypeConverter
+    fun toDateString(date: LocalDate?): String? {
+        return date?.let {
+            val type = object : TypeToken<LocalDate>() {}.type
+            gson.toJson(date, type)
+        }
+    }
+
+    @TypeConverter
+    fun toString(value: Document.DocumentSummaryInformation?): String? {
+        return value?.let{
+            val type = object : TypeToken<Document.DocumentSummaryInformation>() {}.type
+            gson.toJson(value, type)
+        }
+    }
+
+    @TypeConverter
+    fun fromString(value: String?): Document.DocumentSummaryInformation? {
+        return value?.let{
+            val type = object : TypeToken<Document.DocumentSummaryInformation>() {}.type
+            gson.fromJson(value, type)
+        }
+    }
 }
 
 class LocalDateAdapter : JsonSerializer<LocalDate>, JsonDeserializer<LocalDate> {
@@ -73,8 +110,9 @@ class LocalDateAdapter : JsonSerializer<LocalDate>, JsonDeserializer<LocalDate> 
 @Database(
     entities = [
         DraftEntry::class,
-        AutoDetailsData::class,
-        Preference::class
+        AutoDetails::class,
+        Preference::class,
+        Document::class
     ],
     version = 1)
 @TypeConverters(Converters::class)
@@ -82,6 +120,7 @@ abstract class DocAppDatabase : RoomDatabase() {
     abstract fun draftEntryDao(): DraftEntryDao
     abstract fun autoDetailsDao(): AutoDetailsDao
     abstract fun preferenceDao(): PreferenceDao
+    abstract fun documentDao(): DocumentDao
 
     companion object {
         private var INSTANCE: DocAppDatabase? = null
@@ -96,8 +135,8 @@ abstract class DocAppDatabase : RoomDatabase() {
                     DocAppDatabase::class.java,
                     "draftApp.db"
                 )
-                    .fallbackToDestructiveMigration()
                     .addCallback(DatabaseCallback(scope))
+//                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 //return
@@ -118,12 +157,20 @@ abstract class DocAppDatabase : RoomDatabase() {
             super.onCreate(db)
 
             INSTANCE?.let { database ->
+                scope.launch {
+                    populateDatabase(database.draftEntryDao())
+                }
+
                 for (preference in PreferenceType::class.sealedSubclasses) {
 
                     preference.simpleName
                         ?.let {
-                            Log.d("DEBUG", "DatabaseCallback.onCreate: inserting preference $it")
-                            Preference(it, "")
+                            val key = it
+                            val value = when(it) {
+                                PreferenceType.ACCESS.key -> PreferenceType.ACCESS.GRANTED
+                                else -> ""
+                            }
+                            Preference(key, value)
                         }
                         ?.let {
                             scope.launch {
@@ -134,11 +181,17 @@ abstract class DocAppDatabase : RoomDatabase() {
             }
         }
 
-        suspend fun populateDatabase(draftEntryDao: DraftEntryDao) {
-//            draftEntryDao.deleteAll()
+//        override fun onOpen(db: SupportSQLiteDatabase) {
+//            super.onOpen(db)
+//        }
 
-            val draft = DraftEntry("Example", "Hello! this is an example draft", emptyList())
-            draftEntryDao.insert(draft)
+        suspend fun populateDatabase(draftEntryDao: DraftEntryDao) {
+            draftEntryDao.insert(
+                DraftEntry("Example", "Hello! this is an example draft", draftId = 0),
+            )
+            draftEntryDao.insert(
+                DraftEntry("Another Example", "Hello! this is another example draft", draftId = 1)
+            )
         }
     }
 }

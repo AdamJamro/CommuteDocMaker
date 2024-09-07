@@ -1,8 +1,9 @@
 package com.example.commutedocmaker
 
 import android.app.Application
-import com.example.commutedocmaker.dataSource.autoDetailsData.AutoDetailsRepository
+import com.example.commutedocmaker.dataSource.autoDetails.AutoDetailsRepository
 import com.example.commutedocmaker.dataSource.DocAppDatabase
+import com.example.commutedocmaker.dataSource.document.DocumentRepository
 import com.example.commutedocmaker.dataSource.draftEntry.DraftRepository
 import com.example.commutedocmaker.dataSource.preference.PreferenceRepository
 import kotlinx.coroutines.CoroutineScope
@@ -14,4 +15,5 @@ class CommuteDocApplication: Application() {
     val draftRepository by lazy { DraftRepository(database.draftEntryDao()) }
     val autoDetailsRepository by lazy { AutoDetailsRepository(database.autoDetailsDao()) }
     val preferenceRepository by lazy { PreferenceRepository(database.preferenceDao()) }
+    val documentRepository by lazy { DocumentRepository(database.documentDao()) }
 }
