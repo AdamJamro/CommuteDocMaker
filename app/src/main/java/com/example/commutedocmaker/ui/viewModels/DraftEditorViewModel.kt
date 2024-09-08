@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.commutedocmaker.dataSource.draftEntry.DraftDataPatch
 import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
 import com.example.commutedocmaker.ui.viewModels.DraftEditorEvent.*
+import com.example.commutedocmaker.xlsx.sanitizeFileName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +27,7 @@ sealed class DraftEditorEvent {
     data class ForthRouteIncludedChanged(val included: Boolean, val patchIndex: Int) : DraftEditorEvent()
     data class BackRouteIncludedChanged(val included: Boolean, val patchIndex: Int) : DraftEditorEvent()
     data class SelectedDatesChanged(val dates: Collection<LocalDate>, val patchIndex: Int) : DraftEditorEvent()
+    data class CashPerKilometerChanged(val cashPerKilometer: Float, val patchIndex: Int) : DraftEditorEvent()
     data class DraftNameChanged(val title: String) : DraftEditorEvent()
     data object Submit : DraftEditorEvent()
 
@@ -41,42 +43,42 @@ class DraftEditorViewModel(
     injectDataPatch: MutableStateFlow<List<DraftDataPatch>> = MutableStateFlow(listOf(DraftDataPatch()))
 //    private val draftEntryIndex: Int = -1 // -1 for no overwriting
 ): ViewModel() {
-    private val _draftDataPatch: MutableStateFlow<List<DraftDataPatch>> = injectDataPatch
-    val draftDataPatch: StateFlow<List<DraftDataPatch>> = _draftDataPatch.asStateFlow()
+    private val _draftDataPatches: MutableStateFlow<List<DraftDataPatch>> = injectDataPatch
+    val draftDataPatches: StateFlow<List<DraftDataPatch>> = _draftDataPatches.asStateFlow()
     private val _title: MutableState<String> = mutableStateOf(initTitle)
     val title by derivedStateOf { _title.value }
 
     private fun updateDraftDataPatchAt(patchIndex: Int, patch: DraftDataPatch) {
-        _draftDataPatch.update {
-            _draftDataPatch.value.toMutableList().apply {
+        _draftDataPatches.update {
+            _draftDataPatches.value.toMutableList().apply {
                 this[patchIndex] = patch
             }
         }
     }
 
     fun addDraftDataPatch() {
-        _draftDataPatch.update {
-            _draftDataPatch.value + DraftDataPatch()
+        _draftDataPatches.update {
+            _draftDataPatches.value + DraftDataPatch()
         }
     }
 
     fun addDraftDataPatch(patch: DraftDataPatch) {
-        _draftDataPatch.update {
-            _draftDataPatch.value + patch
+        _draftDataPatches.update {
+            _draftDataPatches.value + patch
         }
     }
 
     fun removeDraftDataPatchAt(patchIndex: Int) {
-        _draftDataPatch.update {
-            _draftDataPatch.value.toMutableList().apply {
+        _draftDataPatches.update {
+            _draftDataPatches.value.toMutableList().apply {
                 removeAt(patchIndex)
-            }
+            }.toList()
         }
     }
 
     fun removeDraftDataPatch(patch: DraftDataPatch) {
-        _draftDataPatch.update {
-            _draftDataPatch.value - patch
+        _draftDataPatches.update {
+            _draftDataPatches.value - patch
         }
     }
 
@@ -86,53 +88,59 @@ class DraftEditorViewModel(
                 return DraftEntry(
                     title = _title.value,
                     contentDescription = "Draft content",
-                    draftDataPatches = _draftDataPatch.value
+                    draftDataPatches = _draftDataPatches.value
                 )
             is Restore ->
                 TODO("delete Restore")
             is SelectedDatesChanged -> {
-                _draftDataPatch.value[event.patchIndex]
+                _draftDataPatches.value[event.patchIndex]
                     .copy(dates = event.dates.toList())
                     .also { updateDraftDataPatchAt(event.patchIndex, it) }
             }
             is BaseAddressChanged -> {
-                _draftDataPatch.value[event.patchIndex]
+                _draftDataPatches.value[event.patchIndex]
                     .copy(baseAddress = event.address)
                     .also { updateDraftDataPatchAt(event.patchIndex, it) }
             }
             is DestinationAddressChanged -> {
-                _draftDataPatch.value[event.patchIndex]
+                _draftDataPatches.value[event.patchIndex]
                     .copy(destinationAddress = event.address)
                     .also { updateDraftDataPatchAt(event.patchIndex, it) }
             }
             is DistanceTravelledChanged -> {
-                _draftDataPatch.value[event.patchIndex]
-                    .copy(distanceTravelled = event.distance)
+                val distance = event.distance.toFloatOrNull() ?: 0f
+                _draftDataPatches.value[event.patchIndex]
+                    .copy(distanceTravelled = distance)
                     .also { updateDraftDataPatchAt(event.patchIndex, it) }
             }
             is ShiftStartTimeChanged -> {
-                _draftDataPatch.value[event.patchIndex]
+                _draftDataPatches.value[event.patchIndex]
                     .copy(shiftStartTime = event.time)
                     .also { updateDraftDataPatchAt(event.patchIndex, it) }
             }
             is ShiftEndTimeChanged -> {
-                _draftDataPatch.value[event.patchIndex]
+                _draftDataPatches.value[event.patchIndex]
                     .copy(shiftEndTime = event.time)
                     .also { updateDraftDataPatchAt(event.patchIndex, it) }
             }
             is ForthRouteIncludedChanged -> {
-                _draftDataPatch.value[event.patchIndex]
+                _draftDataPatches.value[event.patchIndex]
                     .copy(forthRouteIncluded = event.included)
                     .also { updateDraftDataPatchAt(event.patchIndex, it) }
             }
             is BackRouteIncludedChanged -> {
-                _draftDataPatch.value[event.patchIndex]
+                _draftDataPatches.value[event.patchIndex]
                     .copy(backRouteIncluded = event.included)
+                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
+            }
+            is CashPerKilometerChanged -> {
+                _draftDataPatches.value[event.patchIndex]
+                    .copy(cashPerKilometer = event.cashPerKilometer)
                     .also { updateDraftDataPatchAt(event.patchIndex, it) }
             }
             is DraftNameChanged -> {
                 scope.launch {
-                    _title.value = event.title
+                    _title.value = sanitizeFileName(event.title)
                 }
             }
         }

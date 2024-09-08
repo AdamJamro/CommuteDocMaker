@@ -77,15 +77,18 @@ class MainActivity : ComponentActivity() {
                         vm.updateDatabase()
                         Toast.makeText(this, "Generating doc...", Toast.LENGTH_SHORT).show()
                         var document: Document? = null
-                        vm.getPreference(PreferenceType.ACCESS)?.also {
-                            if (it == GRANTED) {
+                        var reason: String = ""
+                        vm.getPreference(PreferenceType.ACCESS)?.also { access ->
+                            if (access == GRANTED) {
                                 document = vm.generateDocument(draft, applicationContext)
+                            } else {
+                                reason = "Access denied."
                             }
                         }
                         val result = document != null
                         val response =
                             if (result) "Document generated successfully"
-                            else "Document generation failed"
+                            else "Document failed to be generated. $reason"
                         Toast.makeText(this, response, Toast.LENGTH_SHORT).show()
                         //return
                         result

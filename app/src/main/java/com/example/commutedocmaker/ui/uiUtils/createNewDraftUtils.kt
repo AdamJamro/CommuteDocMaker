@@ -1,7 +1,5 @@
 package com.example.commutedocmaker.ui.uiUtils
 
-import androidx.annotation.StringRes
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -10,7 +8,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,7 +15,6 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -32,7 +28,7 @@ import com.example.commutedocmaker.R.string.night_hours_option_selected_string_r
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
-import com.example.commutedocmaker.ui.convertToStringTime
+import com.example.commutedocmaker.ui.views.convertQuartersToStringTime
 import com.example.commutedocmaker.ui.theme.Typography
 import com.example.cupcake.ui.theme.*
 import java.time.YearMonth
@@ -468,8 +464,8 @@ fun CommuteClockTimeRangeSlider(
             onValueChange = { range -> sliderPosition.value = range },
             onValueChangeFinished = {
                 onUpdateTimeRange(
-                    /*startTime=*/  convertToStringTime(sliderPosition.value.start),
-                    /*endTime=*/    convertToStringTime(sliderPosition.value.endInclusive)
+                    /*startTime=*/  convertQuartersToStringTime(sliderPosition.value.start),
+                    /*endTime=*/    convertQuartersToStringTime(sliderPosition.value.endInclusive)
                 )
             },
             track = { rangeSliderState ->
@@ -524,7 +520,7 @@ fun CommuteClockTimeRangeSlider(
                 shadowElevation = 6.dp
             ) {
                 Text(
-                    text = convertToStringTime(sliderPosition.value.start),
+                    text = convertQuartersToStringTime(sliderPosition.value.start),
                     color = Color.White,
                     style = Typography.headlineSmall,
                     modifier = Modifier
@@ -554,7 +550,7 @@ fun CommuteClockTimeRangeSlider(
                 shadowElevation = 6.dp
             ) {
                 Text(
-                    text = convertToStringTime(sliderPosition.value.endInclusive),
+                    text = convertQuartersToStringTime(sliderPosition.value.endInclusive),
                     color = Color.White,
                     style = Typography.headlineSmall,
                     modifier = Modifier

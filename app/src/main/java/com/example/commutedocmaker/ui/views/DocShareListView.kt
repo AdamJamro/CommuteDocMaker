@@ -1,4 +1,4 @@
-package com.example.commutedocmaker.ui
+package com.example.commutedocmaker.ui.views
 
 import android.annotation.SuppressLint
 import android.util.Log

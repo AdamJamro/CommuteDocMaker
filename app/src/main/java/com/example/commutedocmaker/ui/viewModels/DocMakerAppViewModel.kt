@@ -7,11 +7,12 @@ import android.widget.Toast
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.FileProvider
 import androidx.lifecycle.*
+import com.example.commutedocmaker.dataSource.autoDetails.AutoDetails
 import com.example.commutedocmaker.dataSource.autoDetails.AutoDetailsRepository
 import com.example.commutedocmaker.dataSource.autoDetails.Details
 import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
 import com.example.commutedocmaker.dataSource.draftEntry.DraftRepository
-import com.example.commutedocmaker.XLSX.XLSXConverter
+import com.example.commutedocmaker.xlsx.XLSXConverter
 import com.example.commutedocmaker.dataSource.document.Document
 import com.example.commutedocmaker.dataSource.document.DocumentRepository
 import com.example.commutedocmaker.dataSource.preference.Preference
@@ -22,7 +23,6 @@ import com.example.commutedocmaker.shouldRevokeAccess
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.io.File
-import java.time.LocalDate
 import kotlin.math.min
 
 class DocMakerAppViewModel(
@@ -37,10 +37,6 @@ class DocMakerAppViewModel(
         private const val ENTRIES_KEY = "entries"
         private const val AUTO_DETAILS_KEY = "details"
         private const val DOCUMENTS_KEY = "documents"
-//        private val emptyAutoData = AutoDetailsData(
-//            id = 0,
-//            details = List(Details.entries.size) { "" }
-//        )
     }
 
     private val scope = injectScope ?: viewModelScope
@@ -284,7 +280,7 @@ class DocMakerAppViewModel(
 
     fun generateDocument(draftEntry: DraftEntry, context: Context): Document? {
         val converter  = XLSXConverter(context)
-        val document: Document? = converter.convertToXLSX(draftEntry)
+        val document: Document? = converter.convertToXLSX(draftEntry, autoDetails = AutoDetails(details = _autoDetails.value))
         Log.d("DEBUG", "DocMakerAppViewModel.generateDocument: ${document?.path ?: "null"}")
         if (document != null) {
             _documents.update { listOf(document) + _documents.value }

@@ -1,18 +1,17 @@
-package com.example.commutedocmaker.ui
+package com.example.commutedocmaker.ui.views
 
+import android.app.Activity.RESULT_CANCELED
 import android.app.Activity.RESULT_OK
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +20,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,13 +29,13 @@ import com.example.commutedocmaker.DraftPickNameDialog
 import com.example.commutedocmaker.R
 import com.example.commutedocmaker.dataSource.draftEntry.DraftDataPatch
 import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
-import com.example.commutedocmaker.ui.CashPerKilometer.PER_DEFAULT_ROUTE
 import com.example.commutedocmaker.ui.viewModels.DraftEditorViewModel
 import kotlin.math.floor
 import com.example.commutedocmaker.ui.uiUtils.DatePickerDialog
 import com.example.commutedocmaker.ui.uiUtils.CommuteClockTimeRangeSliderWrapper
 import com.example.commutedocmaker.ui.viewModels.DraftEditorEvent.*
 import com.example.commutedocmaker.ui.theme.Typography
+import com.example.commutedocmaker.ui.uiUtils.clickableWithoutRipple
 
 @Composable
 fun DraftEditorView (
@@ -46,12 +46,13 @@ fun DraftEditorView (
         draft: DraftEntry?
             ) -> Unit
 ) {
-    val uiState = viewModel.draftDataPatch.collectAsState()
+    val uiState = viewModel.draftDataPatches.collectAsState()
     var showNameChangeDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val titleClickInteractionSource = remember { MutableInteractionSource() }
 
     DraftPickNameDialog(
-        shouldShowDialog = showNameChangeDialog,
+        visible = showNameChangeDialog,
         onDismissRequest = { showNameChangeDialog = false },
         onSubmitted = { newName: String ->
             viewModel.onUiEvent(DraftNameChanged(newName))
@@ -77,7 +78,10 @@ fun DraftEditorView (
                 modifier = Modifier
                     .align(Alignment.Center)
                     .padding(vertical = 15.dp)
-                    .clickable(onClick = { showNameChangeDialog = true })
+                    .clickableWithoutRipple(
+                        interactionSource = titleClickInteractionSource,
+                        onClick = { showNameChangeDialog = true }
+                    )
                     .width(200.dp),
                 text = viewModel.title,
                 style = Typography.titleLarge,
@@ -85,7 +89,10 @@ fun DraftEditorView (
                 softWrap = true
             )
             Button(
-                modifier = Modifier.align(Alignment.CenterEnd),
+                modifier = Modifier
+                    .size(width = 55.dp, height = 45.dp)
+                    .align(Alignment.CenterEnd),
+                contentPadding = PaddingValues(10.dp),
                 onClick = {
                     val draft : DraftEntry? = viewModel.onUiEvent(Submit)
                     if (draft == null) {
@@ -96,8 +103,24 @@ fun DraftEditorView (
                 }
             ) {
                 Icon(
+                    modifier = Modifier.fillMaxSize(),
                     imageVector = Icons.Default.Done,
-                    contentDescription = "Submit draft"
+                    contentDescription = "submit_draft_button"
+                )
+            }
+            Button(
+                modifier = Modifier
+                    .size(width = 55.dp, height = 45.dp)
+                    .align(Alignment.CenterStart),
+                contentPadding = PaddingValues(12.dp),
+                onClick = {
+                    onFinishActivity(RESULT_CANCELED, null)
+                }
+            ) {
+                Icon(
+                    modifier = Modifier.fillMaxSize(),
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "cancel_draft_edition_button"
                 )
             }
         }
@@ -114,7 +137,16 @@ fun DraftEditorView (
     }
 }
 
-fun convertToStringTime(time: Float): String {
+fun convertMinutesToStringTime(time: Int): String {
+    val hours = time / 60
+    val minutes = time % 60
+    val hoursAsString: String = hours.toString().padStart(2, '0')
+    val minutesAsString = minutes.toString().padStart(2, '0')
+    val resultTime = "$hoursAsString:$minutesAsString"
+    return resultTime
+}
+
+fun convertQuartersToStringTime(time: Float): String {
     var hours = floor(time / 4).toInt()
     if (hours > 23) {
         hours -= 24
@@ -159,7 +191,6 @@ enum class CashPerKilometer(val rate: Float, val description: Int) {
     PER_FIVE_PEOPLE(0.55f, R.string.per_five_people),
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DataPatchesEditor(
     modifier: Modifier = Modifier,
@@ -168,7 +199,6 @@ fun DataPatchesEditor(
     onFinishEditor: (Int, DraftEntry?) -> Unit = { _, _ -> }
 ) {
     var showDatePickerDialog by remember { mutableStateOf(false) }
-    var dropdownMenuExpanded by remember { mutableStateOf(false) }
 
 
     LazyColumn(
@@ -202,7 +232,7 @@ fun DataPatchesEditor(
                     .animateItem(),
                 shape = MaterialTheme.shapes.medium,
                 colors = CardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     contentColor = MaterialTheme.colorScheme.primary,
                     disabledContentColor = MaterialTheme.colorScheme.onSurface,
                     disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -213,88 +243,45 @@ fun DataPatchesEditor(
                         value = dataPatchState.baseAddress,
                         onValueChange = { viewModel.onUiEvent(BaseAddressChanged(it, patchIndex)) },
                         label = { Text(stringResource(id = R.string.base_address_string_representation)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = MaterialTheme.typography.titleLarge
                     )
 
                     OutlinedTextField(
                         value = dataPatchState.destinationAddress,
                         onValueChange = { viewModel.onUiEvent(DestinationAddressChanged(it, patchIndex)) },
                         label = { Text(stringResource(id = R.string.destination_address_string_representation)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = MaterialTheme.typography.titleLarge
                     )
 
+                    var distanceTraveledString by remember { mutableStateOf(dataPatchState.distanceTravelled.toString()) }
+                    var distanceTraveledError by remember { mutableStateOf(false) }
                     OutlinedTextField(
-                        value = dataPatchState.distanceTravelled,
-                        onValueChange = { viewModel.onUiEvent(DistanceTravelledChanged(it, patchIndex)) },
+                        isError = distanceTraveledError,
+                        value = distanceTraveledString,
+                        onValueChange = {
+                            distanceTraveledString = it
+                            distanceTraveledError = it.toFloatOrNull() == null
+                            viewModel.onUiEvent(DistanceTravelledChanged(it, patchIndex))
+                        },
+                        trailingIcon = {
+                            if (distanceTraveledError)
+                                Icon(Icons.Filled.Info,"error", tint = MaterialTheme.colorScheme.error)
+                        },
                         label = { Text(stringResource(id = R.string.distance_travelled_string_representation)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+                        textStyle = MaterialTheme.typography.titleLarge
                     )
 
-                    val options = CashPerKilometer.entries
-                        .map {
+                    CashRateDropdownMenu(
+                        options = CashPerKilometer.entries.map {
                             Pair("${it.rate}€/km - ${stringResource(it.description)}", it.rate.toString())
-                        }
-                    var rateFieldText by remember { mutableStateOf(PER_DEFAULT_ROUTE.rate.toString()) }
-                    val icon = if(dropdownMenuExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.ArrowDropDown
-                    var textFieldSize by remember { mutableStateOf(Size.Zero) }
-
-                    Box {
-                        OutlinedTextField(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .onGloballyPositioned { coordinates ->
-                                    textFieldSize = coordinates.size.toSize()
-                                },
-                            value = rateFieldText,
-                            label = { Text(stringResource(R.string.cash_per_kilometer_string_representation)) },
-                            onValueChange = {
-                                rateFieldText = it
-                            },
-                            readOnly = true,
-                            trailingIcon = {
-                                Box(
-                                    contentAlignment = Alignment.CenterEnd,
-                                    modifier = Modifier
-                                        .width(with(LocalDensity.current) { textFieldSize.width.toDp() * 0.8f })
-                                        .padding(12.dp)
-                                        .clickable(
-                                            onClick = {
-                                                dropdownMenuExpanded = !dropdownMenuExpanded
-                                            },
-                                        )
-                                ) {
-                                    Icon(
-                                        modifier = Modifier
-                                            .size(32.dp)
-                                            .clickable {
-                                                dropdownMenuExpanded = !dropdownMenuExpanded
-                                            },
-                                        imageVector = icon,
-                                        contentDescription = "Dropdown"
-                                    )
-                                }
-                            }
-                        )
-
-                        DropdownMenu(
-                            expanded = dropdownMenuExpanded,
-                            onDismissRequest = { dropdownMenuExpanded = false },
-                            modifier = Modifier
-                                .width(with(LocalDensity.current) { textFieldSize.width.toDp() })
-                                .background(MaterialTheme.colorScheme.primaryContainer)
-                        ) {
-                            options.forEach { option ->
-                                DropdownMenuItem(
-                                    text= { Text(text = option.first, fontSize = 16.sp) },
-
-                                    onClick = {
-                                        rateFieldText = option.second
-                                        dropdownMenuExpanded = false
-                                    }
-                                )
-                            }
-                        }
-                    }
+                        },
+                        rate = dataPatchState.cashPerKilometer,
+                        onRateChange = { rate: Float -> viewModel.onUiEvent(CashPerKilometerChanged(rate, patchIndex)) },
+                        textStyle = MaterialTheme.typography.titleLarge
+                    )
 
 
                     Column(
@@ -352,7 +339,48 @@ fun DataPatchesEditor(
                         onClick = { showDatePickerDialog = true },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Select date")
+                        Text(stringResource(R.string.select_date))
+                    }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Button(
+                        onClick = { viewModel.removeDraftDataPatchAt(patchIndex) },
+                        modifier = Modifier
+                            .align(Alignment.CenterVertically)
+                            .padding(8.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                stringResource(id = R.string.delete),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.size(4.dp))
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "delete_data_patch_button"
+                            )
+                        }
+                    }
+                    Button(
+                        onClick = { viewModel.addDraftDataPatch(dataPatchState) },
+                        modifier = Modifier
+                            .align(Alignment.CenterVertically)
+                            .padding(8.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(id = R.string.duplicate_data_patch_label),)
+                            Spacer(modifier = Modifier.size(4.dp))
+                            Icon(
+                                imageVector = Icons.Default.AddCircle,
+                                contentDescription = "duplicate_data_patch_button"
+                            )
+                        }
                     }
                 }
             }
@@ -402,5 +430,75 @@ fun DataPatchesEditor(
             }
         }
     }
+}
 
+
+@Composable
+fun CashRateDropdownMenu(
+    modifier: Modifier = Modifier,
+    options: List<Pair<String, String>>,
+    rate: Float,
+    onRateChange: (Float) -> Unit,
+    textStyle: TextStyle = TextStyle.Default
+) {
+    var dropdownMenuExpanded by remember { mutableStateOf(false) }
+    val icon = if(dropdownMenuExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.ArrowDropDown
+    var textFieldSize by remember { mutableStateOf(Size.Zero) }
+
+    Box(modifier) {
+        OutlinedTextField(
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { coordinates ->
+                    textFieldSize = coordinates.size.toSize()
+                },
+            textStyle = textStyle,
+            value = rate.toString(),
+            label = { Text(stringResource(R.string.cash_per_kilometer_string_representation)) },
+            onValueChange = { value: String -> onRateChange(value.toFloatOrNull() ?: 0f) },
+            readOnly = true,
+            trailingIcon = {
+                Box(
+                    contentAlignment = Alignment.CenterEnd,
+                    modifier = Modifier
+                        .width(with(LocalDensity.current) { textFieldSize.width.toDp() * 0.8f })
+                        .padding(12.dp)
+                        .clickable(
+                            onClick = {
+                                dropdownMenuExpanded = !dropdownMenuExpanded
+                            },
+                        )
+                ) {
+                    Icon(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clickable {
+                                dropdownMenuExpanded = !dropdownMenuExpanded
+                            },
+                        imageVector = icon,
+                        contentDescription = "Dropdown"
+                    )
+                }
+            }
+        )
+
+        DropdownMenu(
+            expanded = dropdownMenuExpanded,
+            onDismissRequest = { dropdownMenuExpanded = false },
+            modifier = Modifier
+                .width(with(LocalDensity.current) { textFieldSize.width.toDp() })
+                .background(MaterialTheme.colorScheme.primaryContainer)
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text= { Text(text = option.first, fontSize = 16.sp) },
+
+                    onClick = {
+                        onRateChange(option.second.toFloatOrNull() ?: 0f)
+                        dropdownMenuExpanded = false
+                    }
+                )
+            }
+        }
+    }
 }

@@ -31,13 +31,7 @@ fun <T : Serializable?> getSerializable(intent: Intent?, name: String, clazz: Cl
 
 fun isFileNameValid(name: String): Boolean {
     if (name.trimmedLength() == 0) return false
-    if (name.length > 25) return false
-    for (char in name) {
-            if (!char.isLetterOrDigit() && char != ' ')
-                return false
-            if (char == '\n')
-                return false
-        }
+    if (name.length > 35) return false
     return true
 }
 

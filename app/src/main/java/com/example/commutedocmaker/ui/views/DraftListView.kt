@@ -1,4 +1,4 @@
-package com.example.commutedocmaker.ui
+package com.example.commutedocmaker.ui.views
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*

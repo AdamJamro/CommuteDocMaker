@@ -1,4 +1,4 @@
-package com.example.commutedocmaker.ui
+package com.example.commutedocmaker.ui.views
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.OutlinedTextField

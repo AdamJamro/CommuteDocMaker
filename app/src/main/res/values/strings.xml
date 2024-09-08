@@ -12,7 +12,7 @@
     <string name="back_commute_included_string_representation">z pracy</string>
     <string name="day_hours_option_selected_string_representation">godziny dzienne</string>
     <string name="night_hours_option_selected_string_representation">godziny nocne</string>
-    <string name="owner_first_name">Imię właścicela</string>
+    <string name="owner_first_name">Imię</string>
     <string name="owner_last_name">Nazwisko</string>
     <string name="address">Adres</string>
     <string name="auto_brand">Marka samochodu</string>
@@ -56,4 +56,10 @@
     <string name="per_three_people">3 osoby</string>
     <string name="per_four_people">4 osoby</string>
     <string name="per_five_people">5 osób</string>
+    <string name="duplicate_data_patch_label">Duplikuj</string>
+    <string name="select_date">Wybierz daty</string>
+    <string name="auto_details_sheet_name">Auto</string>
+    <string name="invalid_distance">błąd</string>
+    <string name="from_home_to_workplace">dom - praca</string>
+    <string name="from_workplace_to_home">praca - dom</string>
 </resources>

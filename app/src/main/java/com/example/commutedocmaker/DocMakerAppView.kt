@@ -6,9 +6,6 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -30,27 +27,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
-import com.example.commutedocmaker.ui.AutoDetailsView
-import com.example.commutedocmaker.ui.DocMakerAppLoadingView
-import com.example.commutedocmaker.ui.DocShareListView
-import com.example.commutedocmaker.ui.DraftListView
+import com.example.commutedocmaker.ui.views.AutoDetailsView
+import com.example.commutedocmaker.ui.views.DocMakerAppLoadingView
+import com.example.commutedocmaker.ui.views.DocShareListView
+import com.example.commutedocmaker.ui.views.DraftListView
 import com.example.commutedocmaker.ui.theme.Typography
 import com.example.commutedocmaker.ui.theme.docAppTextStyles
 import com.example.commutedocmaker.ui.viewModels.DocMakerAppViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntOffset
 import androidx.wear.compose.material.ExperimentalWearMaterialApi
-import androidx.wear.compose.material.FractionalThreshold
-import androidx.wear.compose.material.rememberSwipeableState
-import androidx.wear.compose.material.swipeable
 import com.example.commutedocmaker.DocMakerAppViews.DOC_SHARE_LIST_VIEW
 import com.example.commutedocmaker.dataSource.document.Document
-import kotlin.math.min
-import kotlin.math.roundToInt
+import com.example.commutedocmaker.xlsx.sanitizeFileName
 
 enum class DocMakerAppViews {
     DRAFT_LIST_VIEW,
@@ -91,7 +80,7 @@ fun DocMakerAppView(
     var spreadsheetData by remember { mutableStateOf<List<DraftEntry>>(emptyList()) }
 
     DraftPickNameDialog(
-        shouldShowDialog = showDialog,
+        visible = showDialog,
         onDismissRequest = { showDialog = false },
         onSubmitted = { draftTitle ->
             showDialog = false
@@ -235,19 +224,17 @@ fun DocMakerSideMenu(
 
 @Composable
 fun DraftPickNameDialog(
-    shouldShowDialog: Boolean,
+    visible: Boolean,
     onDismissRequest: () -> Unit,
     onSubmitted: (String) -> Unit,
     previousName: String = ""
     ) {
-    if (!shouldShowDialog) return
+    if (!visible) return
     val context = LocalContext.current
     var text by remember { mutableStateOf(previousName) }
     val onSubmitWithValidityCheck = { str: String ->
-        var submittedName: String = str
-        submittedName.trim().also { submittedName = it }
-        if (isFileNameValid(submittedName)) {
-            onSubmitted(submittedName)
+        if (isFileNameValid(str)) {
+            onSubmitted(sanitizeFileName(str))
         } else {
             Toast.makeText(context, "Invalid name!", Toast.LENGTH_SHORT).show()
             onDismissRequest()
@@ -277,7 +264,7 @@ fun DraftPickNameDialog(
                     .align(Alignment.CenterHorizontally),
                     text = "Enter new draft's name")
 
-                Divider()
+                HorizontalDivider()
 
                 TextField(
                     modifier = Modifier
@@ -296,7 +283,9 @@ fun DraftPickNameDialog(
                     modifier = Modifier
                         .wrapContentHeight()
                         .align(alignment = Alignment.End),
-                    onClick = { onSubmitWithValidityCheck(text) }
+                    onClick = {
+                        onSubmitWithValidityCheck(text)
+                    }
                 ) {
                     Text(
                         text = "Confirm",

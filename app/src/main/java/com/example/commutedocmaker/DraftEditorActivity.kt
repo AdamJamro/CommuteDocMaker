@@ -10,8 +10,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
 import com.example.commutedocmaker.dataSource.preference.PreferenceType
 import com.example.commutedocmaker.dataSource.preference.PreferenceType.ACCESS.DENIED
-import com.example.commutedocmaker.dataSource.preference.PreferenceType.ACCESS.GRANTED
-import com.example.commutedocmaker.ui.DraftEditorView
+import com.example.commutedocmaker.ui.views.DraftEditorView
 import com.example.commutedocmaker.ui.viewModels.DraftEditorViewModelFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive

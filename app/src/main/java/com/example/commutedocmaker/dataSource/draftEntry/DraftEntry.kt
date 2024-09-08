@@ -4,16 +4,18 @@ import java.io.Serializable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.example.commutedocmaker.ui.views.CashPerKilometer
 import java.time.LocalDate
 
 data class DraftDataPatch(
     val baseAddress: String = "",
     val destinationAddress: String = "",
-    val distanceTravelled: String = "",
+    val distanceTravelled: Float = 0f,
     val shiftStartTime: String = "",
     val shiftEndTime: String = "",
     val forthRouteIncluded: Boolean = true,
     val backRouteIncluded: Boolean = true,
+    val cashPerKilometer: Float = 0f,
     val dates: List<LocalDate> = emptyList()
 ): Serializable
 
