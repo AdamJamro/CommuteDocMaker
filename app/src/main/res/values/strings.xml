@@ -62,4 +62,9 @@
     <string name="invalid_distance">błąd</string>
     <string name="from_home_to_workplace">dom - praca</string>
     <string name="from_workplace_to_home">praca - dom</string>
+    <string name="draft_editor_default_title">Tytuł</string>
+    <string name="empty_draft_content">pusty dokument</string>
+    <string name="draft_description_cash">Kwota</string>
+    <string name="enter_draft_new_name">Wprowadź nową nazwę</string>
+    <string name="enter_new_draft_name">Wprowadź nazwę dokumentu</string>
 </resources>

@@ -11,7 +11,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.layout
@@ -30,6 +29,7 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 import com.example.commutedocmaker.ui.views.convertQuartersToStringTime
 import com.example.commutedocmaker.ui.theme.Typography
+import com.example.commutedocmaker.ui.views.clickableWithoutRipple
 import com.example.cupcake.ui.theme.*
 import java.time.YearMonth
 
@@ -136,21 +136,6 @@ fun DatePickerDialog(
         }
     }
 }
-
-fun Modifier.clickableWithoutRipple(
-    interactionSource: MutableInteractionSource,
-    onClick: () -> Unit
-) = composed(
-    factory = {
-        this.then(
-            Modifier.clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = { onClick() }
-            )
-        )
-    }
-)
 
 @Composable
 fun MultiDatePicker(

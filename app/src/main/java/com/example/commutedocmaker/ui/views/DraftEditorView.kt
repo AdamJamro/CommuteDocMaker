@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -35,7 +36,6 @@ import com.example.commutedocmaker.ui.uiUtils.DatePickerDialog
 import com.example.commutedocmaker.ui.uiUtils.CommuteClockTimeRangeSliderWrapper
 import com.example.commutedocmaker.ui.viewModels.DraftEditorEvent.*
 import com.example.commutedocmaker.ui.theme.Typography
-import com.example.commutedocmaker.ui.uiUtils.clickableWithoutRipple
 
 @Composable
 fun DraftEditorView (
@@ -48,7 +48,6 @@ fun DraftEditorView (
 ) {
     val uiState = viewModel.draftDataPatches.collectAsState()
     var showNameChangeDialog by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
     val titleClickInteractionSource = remember { MutableInteractionSource() }
 
     DraftPickNameDialog(
@@ -58,7 +57,7 @@ fun DraftEditorView (
             viewModel.onUiEvent(DraftNameChanged(newName))
             showNameChangeDialog = false
         },
-        previousName = viewModel.title
+        currentDisplayName = viewModel.title
     )
 
     Column(
@@ -261,9 +260,11 @@ fun DataPatchesEditor(
                         isError = distanceTraveledError,
                         value = distanceTraveledString,
                         onValueChange = {
-                            distanceTraveledString = it
-                            distanceTraveledError = it.toFloatOrNull() == null
-                            viewModel.onUiEvent(DistanceTravelledChanged(it, patchIndex))
+                            it.replace(",", ".").also { value ->
+                                distanceTraveledString = value
+                                distanceTraveledError = value.toFloatOrNull() == null
+                                viewModel.onUiEvent(DistanceTravelledChanged(value, patchIndex))
+                            }
                         },
                         trailingIcon = {
                             if (distanceTraveledError)
@@ -502,3 +503,18 @@ fun CashRateDropdownMenu(
         }
     }
 }
+
+fun Modifier.clickableWithoutRipple(
+    interactionSource: MutableInteractionSource,
+    onClick: () -> Unit
+) = composed(
+    factory = {
+        this.then(
+            Modifier.clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = { onClick() }
+            )
+        )
+    }
+)

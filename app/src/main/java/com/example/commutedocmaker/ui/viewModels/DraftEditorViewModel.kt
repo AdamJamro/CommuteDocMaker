@@ -1,11 +1,15 @@
 package com.example.commutedocmaker.ui.viewModels
 
+import android.app.Application
+import android.content.res.Resources
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.example.commutedocmaker.R
 import com.example.commutedocmaker.dataSource.draftEntry.DraftDataPatch
 import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
 import com.example.commutedocmaker.ui.viewModels.DraftEditorEvent.*
@@ -17,6 +21,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 sealed class DraftEditorEvent {
     data class BaseAddressChanged(val address: String, val patchIndex: Int) : DraftEditorEvent()
@@ -30,128 +36,152 @@ sealed class DraftEditorEvent {
     data class CashPerKilometerChanged(val cashPerKilometer: Float, val patchIndex: Int) : DraftEditorEvent()
     data class DraftNameChanged(val title: String) : DraftEditorEvent()
     data object Submit : DraftEditorEvent()
-
-    //TODO("delete Restore")
-    data class Restore(val draftSavedRawData: DraftEntry) : DraftEditorEvent()
 }
 
 
 
 class DraftEditorViewModel(
-    initTitle: String,
-    private val scope: CoroutineScope,
-    injectDataPatch: MutableStateFlow<List<DraftDataPatch>> = MutableStateFlow(listOf(DraftDataPatch()))
-//    private val draftEntryIndex: Int = -1 // -1 for no overwriting
-): ViewModel() {
-    private val _draftDataPatches: MutableStateFlow<List<DraftDataPatch>> = injectDataPatch
-    val draftDataPatches: StateFlow<List<DraftDataPatch>> = _draftDataPatches.asStateFlow()
-    private val _title: MutableState<String> = mutableStateOf(initTitle)
-    val title by derivedStateOf { _title.value }
+    injectTitle: String = "empty title",
+    injectScope: CoroutineScope? = null,
+    injectDataPatch: MutableStateFlow<List<DraftDataPatch>> = MutableStateFlow(listOf(DraftDataPatch())),
+    private val resources: Resources? = null,
+    ): ViewModel() {
+        private val scope = injectScope ?: viewModelScope
+        private val _draftDataPatches: MutableStateFlow<List<DraftDataPatch>> = injectDataPatch
+        val draftDataPatches: StateFlow<List<DraftDataPatch>> = _draftDataPatches.asStateFlow()
+        private val _title: MutableState<String> = mutableStateOf(injectTitle)
+        val title by derivedStateOf { _title.value }
+        private fun getRes(resId: Int): String = resources?.getString(resId) ?: ""
 
-    private fun updateDraftDataPatchAt(patchIndex: Int, patch: DraftDataPatch) {
-        _draftDataPatches.update {
-            _draftDataPatches.value.toMutableList().apply {
-                this[patchIndex] = patch
+        private fun updateDraftDataPatchAt(patchIndex: Int, patch: DraftDataPatch) {
+            _draftDataPatches.update {
+                _draftDataPatches.value
+                    .toMutableList()
+                    .also { it[patchIndex] = patch }
+                    .toList()
             }
         }
-    }
 
-    fun addDraftDataPatch() {
-        _draftDataPatches.update {
-            _draftDataPatches.value + DraftDataPatch()
+        fun addDraftDataPatch() {
+            _draftDataPatches.update {
+                _draftDataPatches.value + DraftDataPatch()
+            }
         }
-    }
 
-    fun addDraftDataPatch(patch: DraftDataPatch) {
-        _draftDataPatches.update {
-            _draftDataPatches.value + patch
+        fun addDraftDataPatch(patch: DraftDataPatch) {
+            _draftDataPatches.update {
+                _draftDataPatches.value + patch
+            }
         }
-    }
 
-    fun removeDraftDataPatchAt(patchIndex: Int) {
-        _draftDataPatches.update {
-            _draftDataPatches.value.toMutableList().apply {
-                removeAt(patchIndex)
-            }.toList()
+        fun removeDraftDataPatchAt(patchIndex: Int) {
+            _draftDataPatches.update {
+                _draftDataPatches.value.toMutableList().apply {
+                    removeAt(patchIndex)
+                }.toList()
+            }
         }
-    }
 
-    fun removeDraftDataPatch(patch: DraftDataPatch) {
-        _draftDataPatches.update {
-            _draftDataPatches.value - patch
+        fun removeDraftDataPatch(patch: DraftDataPatch) {
+            _draftDataPatches.update {
+                _draftDataPatches.value - patch
+            }
         }
-    }
 
-    fun onUiEvent(event: DraftEditorEvent): DraftEntry? {
-        when (event) {
-            is Submit ->
-                return DraftEntry(
-                    title = _title.value,
-                    contentDescription = "Draft content",
-                    draftDataPatches = _draftDataPatches.value
-                )
-            is Restore ->
-                TODO("delete Restore")
-            is SelectedDatesChanged -> {
-                _draftDataPatches.value[event.patchIndex]
-                    .copy(dates = event.dates.toList())
-                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
-            }
-            is BaseAddressChanged -> {
-                _draftDataPatches.value[event.patchIndex]
-                    .copy(baseAddress = event.address)
-                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
-            }
-            is DestinationAddressChanged -> {
-                _draftDataPatches.value[event.patchIndex]
-                    .copy(destinationAddress = event.address)
-                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
-            }
-            is DistanceTravelledChanged -> {
-                val distance = event.distance.toFloatOrNull() ?: 0f
-                _draftDataPatches.value[event.patchIndex]
-                    .copy(distanceTravelled = distance)
-                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
-            }
-            is ShiftStartTimeChanged -> {
-                _draftDataPatches.value[event.patchIndex]
-                    .copy(shiftStartTime = event.time)
-                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
-            }
-            is ShiftEndTimeChanged -> {
-                _draftDataPatches.value[event.patchIndex]
-                    .copy(shiftEndTime = event.time)
-                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
-            }
-            is ForthRouteIncludedChanged -> {
-                _draftDataPatches.value[event.patchIndex]
-                    .copy(forthRouteIncluded = event.included)
-                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
-            }
-            is BackRouteIncludedChanged -> {
-                _draftDataPatches.value[event.patchIndex]
-                    .copy(backRouteIncluded = event.included)
-                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
-            }
-            is CashPerKilometerChanged -> {
-                _draftDataPatches.value[event.patchIndex]
-                    .copy(cashPerKilometer = event.cashPerKilometer)
-                    .also { updateDraftDataPatchAt(event.patchIndex, it) }
-            }
-            is DraftNameChanged -> {
-                scope.launch {
-                    _title.value = sanitizeFileName(event.title)
+        fun onUiEvent(event: DraftEditorEvent): DraftEntry? {
+            when (event) {
+                is Submit ->
+                    return DraftEntry(
+                        title = _title.value,
+                        contentDescription = createDraftEntryDescription(_draftDataPatches.value),
+                        draftDataPatches = _draftDataPatches.value
+                    )
+                is SelectedDatesChanged -> {
+                    _draftDataPatches.value[event.patchIndex]
+                        .copy(dates = event.dates.toList())
+                        .also { updateDraftDataPatchAt(event.patchIndex, it) }
+                }
+                is BaseAddressChanged -> {
+                    _draftDataPatches.value[event.patchIndex]
+                        .copy(baseAddress = event.address)
+                        .also { updateDraftDataPatchAt(event.patchIndex, it) }
+                }
+                is DestinationAddressChanged -> {
+                    _draftDataPatches.value[event.patchIndex]
+                        .copy(destinationAddress = event.address)
+                        .also { updateDraftDataPatchAt(event.patchIndex, it) }
+                }
+                is DistanceTravelledChanged -> {
+                    val distance = event.distance
+                        .replace(",", ".")
+                        .toFloatOrNull()
+                        ?: 0f
+                    _draftDataPatches.value[event.patchIndex]
+                        .copy(distanceTravelled = distance)
+                        .also { updateDraftDataPatchAt(event.patchIndex, it) }
+                }
+                is ShiftStartTimeChanged -> {
+                    _draftDataPatches.value[event.patchIndex]
+                        .copy(shiftStartTime = event.time)
+                        .also { updateDraftDataPatchAt(event.patchIndex, it) }
+                }
+                is ShiftEndTimeChanged -> {
+                    _draftDataPatches.value[event.patchIndex]
+                        .copy(shiftEndTime = event.time)
+                        .also { updateDraftDataPatchAt(event.patchIndex, it) }
+                }
+                is ForthRouteIncludedChanged -> {
+                    _draftDataPatches.value[event.patchIndex]
+                        .copy(forthRouteIncluded = event.included)
+                        .also { updateDraftDataPatchAt(event.patchIndex, it) }
+                }
+                is BackRouteIncludedChanged -> {
+                    _draftDataPatches.value[event.patchIndex]
+                        .copy(backRouteIncluded = event.included)
+                        .also { updateDraftDataPatchAt(event.patchIndex, it) }
+                }
+                is CashPerKilometerChanged -> {
+                    _draftDataPatches.value[event.patchIndex]
+                        .copy(cashPerKilometer = event.cashPerKilometer)
+                        .also { updateDraftDataPatchAt(event.patchIndex, it) }
+                }
+                is DraftNameChanged -> {
+                    scope.launch {
+                        _title.value = sanitizeFileName(event.title)
+                    }
                 }
             }
+            return null
         }
-        return null
-    }
+
+        private fun createDraftEntryDescription(draft: List<DraftDataPatch>): String {
+            val dates = mutableListOf<LocalDate>()
+            var payableAmount = 0f
+            draft.forEach { patch ->
+                patch.dates.forEach{ date ->
+                    dates.add(date)
+                    payableAmount += patch.cashPerKilometer * patch.distanceTravelled
+                }
+            }
+            val payableAmountFormatted = String.format("%.2f", payableAmount)
+            val firstDate = dates.minOrNull() ?: return getRes(R.string.empty_draft_content)
+            val lastDate = dates.maxOrNull() ?: return getRes(R.string.empty_draft_content)
+
+            val firstDateFormatted = firstDate.format(DateTimeFormatter.ofPattern("EEEE dd LLLL").withZone(ZoneId.systemDefault()))
+            val lastDateFormatted = lastDate.format(DateTimeFormatter.ofPattern("EEEE dd LLLL").withZone(ZoneId.systemDefault()))
+
+            val description = "${getRes(R.string.period)}:" +
+                    "\n$firstDateFormatted - $lastDateFormatted" +
+                    "\n${getRes(R.string.draft_description_cash)}: $payableAmountFormatted€"
+            return description
+        }
 }
 
 @Suppress("UNCHECKED_CAST")
 class DraftEditorViewModelFactory(
     private val title: String,
-    private val scope: CoroutineScope,
+    private val scope: CoroutineScope?,
+    private val resources: Resources?,
     private val existingDraftEntry: DraftEntry? = null,
 //    private val draftIndex: Int = -1
 ): ViewModelProvider.Factory {
@@ -161,9 +191,10 @@ class DraftEditorViewModelFactory(
                 try {
                     val dataPatch = existingDraftEntry.draftDataPatches
                     return DraftEditorViewModel(
-                        title,
-                        scope,
-                        MutableStateFlow(dataPatch),
+                        injectTitle = existingDraftEntry.title,
+                        injectScope = scope,
+                        resources = resources,
+                        injectDataPatch = MutableStateFlow(dataPatch),
 //                        draftIndex
                     ) as T
                 } catch (e: NoSuchElementException) {

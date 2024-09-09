@@ -28,10 +28,10 @@ fun <T : Serializable?> getSerializable(intent: Intent?, name: String, clazz: Cl
                intent?.getSerializableExtra(name) as T
 }
 
-
+const val FILENAME_MAX_LENGTH = 45
 fun isFileNameValid(name: String): Boolean {
     if (name.trimmedLength() == 0) return false
-    if (name.length > 35) return false
+    if (name.length > FILENAME_MAX_LENGTH) return false
     return true
 }
 

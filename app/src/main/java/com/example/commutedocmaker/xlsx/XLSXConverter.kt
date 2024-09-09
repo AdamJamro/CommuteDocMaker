@@ -35,8 +35,8 @@ private typealias RowData = Map<CommuteSheetDataType, String>
 
 fun sanitizeFileName(title: String): String {
     val sanitized =  title
-        .trim()
-        .replace(Regex("[^a-zA-Z0-9.()-]"), "_")
+        .replace(Regex("(?<=\\s)\\s|^\\s"), "")
+        .replace(Regex("[^a-zA-Z0-9.()ĄąĆćĘęŁłŃńÓóŚśŹźŻż \\-]"), "_")
     return sanitized
 }
 
@@ -192,9 +192,10 @@ class XLSXConverter(private val context: Context) {
                     }
                 }
             }
-            rows.sortBy { value ->
+            rows.sortBy { row ->
+                val sortBy = row[DEPARTURE_DATETIME]
                 LocalDate.parse(
-                    value[DEPARTURE_DATETIME],
+                    sortBy,
                     DateTimeFormatter.ofPattern(
                         "dd.MM.yyyy HH:mm:ss"
                     )

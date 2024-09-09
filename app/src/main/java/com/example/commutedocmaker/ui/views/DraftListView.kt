@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.commutedocmaker.FILENAME_MAX_LENGTH
 import com.example.commutedocmaker.dataSource.draftEntry.DraftEntry
 import com.example.commutedocmaker.ui.theme.Typography
 import com.example.commutedocmaker.R
@@ -91,7 +92,8 @@ fun DraftListView(
                     shadowElevation = 2.dp,
                 ) {
                     Box(
-                        modifier = Modifier.clickable(
+                        modifier = Modifier
+                            .clickable(
                             onClick = {
                                 if (expandedIndex == index)
                                     onEditDraft(item)
@@ -105,11 +107,12 @@ fun DraftListView(
                             DraftTextDescription(item, expanded = expandedIndex == index)
 
                             AnimatedVisibility(
+                                modifier = Modifier.fillMaxSize(),
                                 visible = expandedIndex == index,
-                                enter = expandHorizontally(
-                                    animationSpec = tween(durationMillis = 700),
-                                    initialWidth = { width -> width/3 }
-                                ) + fadeIn(spring(stiffness = 1000f)),
+                                enter = slideInHorizontally(
+                                    animationSpec = tween(durationMillis = 500),
+                                    initialOffsetX = { -it }
+                                ) + fadeIn(spring(stiffness = 5000f)),
                                 exit = shrinkVertically(
                                     animationSpec = tween(durationMillis = 500, easing = LinearEasing),
                                     targetHeight = { 0 }
@@ -120,8 +123,7 @@ fun DraftListView(
                             ) {
                                 Text(
                                     modifier = Modifier
-                                        .fillMaxSize()
-                                        .height(48.dp)
+                                        .wrapContentSize()
                                         .padding(8.dp),
                                     text =  item.contentDescription,
                                     textAlign = TextAlign.Center,
@@ -197,11 +199,10 @@ fun DraftTextDescription(
 
 
     val contentDescription =
-        if (!expanded
-            && item.contentDescription.length > (40 - 3 / 2 * item.title.length)) {
-            item.contentDescription.subSequence(0, 40 - 3 / 2 * item.title.length).toString() + "..."
+        if (item.contentDescription.length > (FILENAME_MAX_LENGTH - item.title.length)) {
+            item.contentDescription.subSequence(0, FILENAME_MAX_LENGTH - item.title.length).toString() + "..."
         } else {
-            ""
+            item.contentDescription
         }
 
     val titleSize = remember {
@@ -229,11 +230,13 @@ fun DraftTextDescription(
 
     }
 
-    Row(Modifier.wrapContentSize(), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        Modifier
+            .wrapContentSize()
+            .padding(top = 4.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(
             modifier = Modifier
                 .wrapContentSize()
-                .height(48.dp)
                 .padding(8.dp),
             text = item.title,
             textAlign = TextAlign.Center,
@@ -242,19 +245,32 @@ fun DraftTextDescription(
             fontWeight = FontWeight.Bold,
             softWrap = true
         )
+        AnimatedVisibility(
+            visible = !expanded,
+            enter = slideInHorizontally(
+                animationSpec = tween(durationMillis = 600),
+                initialOffsetX = { it }
+            ),
+            exit = slideOutHorizontally(
+                animationSpec = tween(durationMillis = 1000,
+                easing = FastOutSlowInEasing),
+                targetOffsetX = { it * 2 }
+            )
+        ) {
 
-        Text(
-            modifier = Modifier
-                .wrapContentSize()
-                .height(48.dp)
-                .padding(8.dp),
-            text =  contentDescription,
-            textAlign = TextAlign.Center,
-            fontSize = Typography.titleSmall.fontSize * 1.2,
-            fontStyle = Typography.titleSmall.fontStyle,
-            softWrap = true
-        )
+            Text(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .padding(top = 4.dp, start = 6.dp),
+                text =  contentDescription.removePrefix(stringResource(R.string.period) + ":\n"),
+                textAlign = TextAlign.Center,
+                fontSize = Typography.titleSmall.fontSize * 1.2,
+                fontStyle = Typography.titleSmall.fontStyle,
+                softWrap = false
+            )
+        }
     }
+//    Spacer(modifier = Modifier.size(12.dp))
 
 
 //    ItemDialogHandler(

@@ -9,6 +9,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,10 +38,11 @@ import com.example.commutedocmaker.ui.theme.docAppTextStyles
 import com.example.commutedocmaker.ui.viewModels.DocMakerAppViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import androidx.wear.compose.material.ExperimentalWearMaterialApi
 import com.example.commutedocmaker.DocMakerAppViews.DOC_SHARE_LIST_VIEW
 import com.example.commutedocmaker.dataSource.document.Document
 import com.example.commutedocmaker.xlsx.sanitizeFileName
+import kotlin.math.max
+import kotlin.math.min
 
 enum class DocMakerAppViews {
     DRAFT_LIST_VIEW,
@@ -47,7 +50,6 @@ enum class DocMakerAppViews {
     AUTO_DETAILS_VIEW
 }
 
-@OptIn(ExperimentalWearMaterialApi::class)
 @Composable
 fun DocMakerAppView(
     viewModel: DocMakerAppViewModel,
@@ -77,7 +79,6 @@ fun DocMakerAppView(
 
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    var spreadsheetData by remember { mutableStateOf<List<DraftEntry>>(emptyList()) }
 
     DraftPickNameDialog(
         visible = showDialog,
@@ -227,11 +228,12 @@ fun DraftPickNameDialog(
     visible: Boolean,
     onDismissRequest: () -> Unit,
     onSubmitted: (String) -> Unit,
-    previousName: String = ""
+    currentDisplayName: String = ""
     ) {
     if (!visible) return
+    val isError = remember { mutableStateOf(false) }
     val context = LocalContext.current
-    var text by remember { mutableStateOf(previousName) }
+    var text by remember { mutableStateOf(currentDisplayName) }
     val onSubmitWithValidityCheck = { str: String ->
         if (isFileNameValid(str)) {
             onSubmitted(sanitizeFileName(str))
@@ -262,7 +264,7 @@ fun DraftPickNameDialog(
                     .fillMaxWidth()
                     .wrapContentHeight()
                     .align(Alignment.CenterHorizontally),
-                    text = "Enter new draft's name")
+                    text = stringResource(R.string.enter_new_draft_name))
 
                 HorizontalDivider()
 
@@ -273,10 +275,31 @@ fun DraftPickNameDialog(
                         .align(Alignment.CenterHorizontally),
                     value = text,
                     onValueChange = { newText: String ->
-                        text = newText
+                        isError.value = !isFileNameValid(newText)
+                        text = sanitizeFileName(newText)
                     },
                     label = { Text("name") },
-                    singleLine = true
+                    singleLine = true,
+                    isError = isError.value,
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                if(isError.value) {
+                                    text = sanitizeFileName(text.dropLast(max(text.length - FILENAME_MAX_LENGTH, 0)))
+                                    isError.value = false
+                                } else {
+                                    text = ""
+                                }
+                            }
+                        ) {
+                            if(isError.value) {
+                                Icon(Icons.Default.Info, tint = MaterialTheme.colorScheme.error, contentDescription = "error")
+                            }
+                            else {
+                                Icon(Icons.Default.Clear, contentDescription = "clear")
+                            }
+                        }
+                    }
                 )
 
                 Button(

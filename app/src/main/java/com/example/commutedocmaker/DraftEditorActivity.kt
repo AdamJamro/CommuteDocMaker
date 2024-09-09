@@ -31,6 +31,7 @@ class DraftEditorActivity : ComponentActivity() {
             title,
             scope = lifecycleScope,
             existingDraftEntry = draft,
+            resources = resources,
 //            draftIndex = draftIndex
         )
 
