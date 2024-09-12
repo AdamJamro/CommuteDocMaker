@@ -6,13 +6,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.commutedocmaker"
-    compileSdk = 34
+    namespace = "com.maur.commutedocmaker"
+    compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.commutedocmaker"
+        applicationId = "com.maur.commutedocmaker"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -22,10 +22,20 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("upload-keystore.jks")
+            storePassword = "tanbulans"
+            keyAlias = "upload_key"
+            keyPassword = "tanbulans"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
@@ -46,6 +56,23 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+//    signingConfigs {
+//        create("release") {
+//            storeFile = file("deployment_keystore.jks")
+//            storePassword = "tanbulans"
+//            keyAlias = "my_keystore_alias"
+//            keyPassword = "tanbulans"
+//        }
+//    }
+//
+//    buildTypes {
+//        getByName("release") {
+//            isMinifyEnabled = true
+//            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+//            signingConfig = signingConfigs.getByName("release")
+//        }
+//    }
 }
 
 dependencies {
@@ -68,9 +95,9 @@ dependencies {
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3-android")
     implementation("androidx.compose.runtime:runtime-livedata")
-    implementation("androidx.activity:activity-compose:1.9.1")
+    implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
-    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("androidx.navigation:navigation-compose:2.8.0")
     implementation("androidx.wear.compose:compose-material:1.4.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
@@ -88,4 +115,7 @@ dependencies {
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-common:2.6.1")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.10")
+
+    // publishing
+    implementation("com.google.android.play:integrity:1.4.0")
 }
