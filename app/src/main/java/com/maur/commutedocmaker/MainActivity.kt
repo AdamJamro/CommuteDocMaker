@@ -46,7 +46,9 @@ class MainActivity : ComponentActivity() {
 
 
         setContent {
-            CommuteDocMakerTheme {
+            CommuteDocMakerTheme(
+                dynamicColor = true,
+            ) {
                 DocMakerAppView(
                     viewModel = vm,
                     onOpenDraftEditor = { draftTitle: String,

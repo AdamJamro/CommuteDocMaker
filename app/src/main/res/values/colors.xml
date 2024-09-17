@@ -7,4 +7,8 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="worksheet_address_background">#EF05CE5C</color>
+    <color name="worksheet_highlight_background">#AAE78E0F</color>
+    <color name="worksheet_secondary_background">#A3DBB3B3</color>
+
 </resources>

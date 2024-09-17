@@ -67,4 +67,5 @@
     <string name="draft_description_cash">Kwota</string>
     <string name="enter_draft_new_name">Wprowadź nową nazwę</string>
     <string name="enter_new_draft_name">Wprowadź nazwę dokumentu</string>
+    <string name="footer_payable_amount_label">kwota do zaplaty:</string>
 </resources>

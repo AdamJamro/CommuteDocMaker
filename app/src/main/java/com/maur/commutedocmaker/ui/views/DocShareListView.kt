@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -42,7 +43,8 @@ fun DocShareListView (
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(8.dp))
-                .background(Color.LightGray),
+                .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
+                .background(Color.Transparent),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -181,6 +183,14 @@ fun DocShareListView (
                         }
                     }
                 }
+                item {
+                    if (expandedIndex == -1) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                    } else {
+                        Spacer(modifier = Modifier.height(62.dp))
+                    }
+                }
+
             }
         }
     }

@@ -19,6 +19,8 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.*
+import kotlin.NoSuchElementException
 
 sealed class DraftEditorEvent {
     data class BaseAddressChanged(val address: String, val patchIndex: Int) : DraftEditorEvent()
@@ -88,7 +90,7 @@ class DraftEditorViewModel(
                 is Submit ->
                     return DraftEntry(
                         title = _title.value,
-                        contentDescription = createDraftEntryDescription(_draftDataPatches.value, event?.resourceContext),
+                        contentDescription = createDraftEntryDescription(_draftDataPatches.value, event.resourceContext),
                         draftDataPatches = _draftDataPatches.value
                     )
                 is SelectedDatesChanged -> {
@@ -151,14 +153,16 @@ class DraftEditorViewModel(
 
         private fun createDraftEntryDescription(draft: List<DraftDataPatch>, resourceContext: Context?): String {
             val dates = mutableListOf<LocalDate>()
-            var payableAmount = 0f
+            var payableAmount = 0.0
             draft.forEach { patch ->
                 patch.dates.forEach{ date ->
                     dates.add(date)
-                    payableAmount += patch.cashPerKilometer * patch.distanceTravelled
+                    val payload = patch.cashPerKilometer * patch.distanceTravelled
+                    if (patch.forthRouteIncluded) payableAmount += payload
+                    if (patch.backRouteIncluded) payableAmount += payload
                 }
             }
-            val payableAmountFormatted = String.format("%.2f", payableAmount)
+            val payableAmountFormatted = String.format(Locale.getDefault(), "%.2f", payableAmount)
             val firstDate = dates.minOrNull() ?: return getRes(resourceContext, R.string.empty_draft_content)
             val lastDate = dates.maxOrNull() ?: return getRes(resourceContext, R.string.empty_draft_content)
 

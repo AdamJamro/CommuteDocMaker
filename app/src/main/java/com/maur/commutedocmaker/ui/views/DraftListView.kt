@@ -65,18 +65,17 @@ fun DraftListView(
         )
     }
 
-    Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(6.dp)
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = {
-                        expandedIndex = -1
-                    })
-                .background(Color.Transparent),
-        ) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .padding(6.dp)
+        .clickable(
+            interactionSource = interactionSource,
+            indication = null,
+            onClick = {
+                expandedIndex = -1
+            })
+        .background(Color.Transparent)
+    ) {
 
         LazyColumn(
             modifier = Modifier
@@ -118,7 +117,7 @@ fun DraftListView(
                                     targetHeight = { 0 }
                                 ) + slideOutHorizontally(
                                     tween(durationMillis = 400, easing = LinearEasing),
-                                    targetOffsetX = { it }
+                                    targetOffsetX = { -it }
                                 )
                             ) {
                                 Text(
@@ -185,6 +184,15 @@ fun DraftListView(
                     }
                 }
             }
+
+            item {
+                if (expandedIndex == -1) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                } else {
+                    Spacer(modifier = Modifier.height(62.dp))
+                }
+            }
+
         }
     }
 }
@@ -254,7 +262,7 @@ fun DraftTextDescription(
             exit = slideOutHorizontally(
                 animationSpec = tween(durationMillis = 1000,
                 easing = FastOutSlowInEasing),
-                targetOffsetX = { it * 2 }
+                targetOffsetX = { it * 3 }
             )
         ) {
 

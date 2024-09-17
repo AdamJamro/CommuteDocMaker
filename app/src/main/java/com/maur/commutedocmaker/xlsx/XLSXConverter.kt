@@ -13,6 +13,11 @@ import com.maur.commutedocmaker.ui.views.convertMinutesToStringTime
 import com.maur.commutedocmaker.ui.views.convertStringTimeToQuarters
 import com.maur.commutedocmaker.xlsx.XLSXConverter.CommuteSheetDataType
 import com.maur.commutedocmaker.xlsx.XLSXConverter.CommuteSheetDataType.*
+import com.maur.commutedocmaker.xlsx.XLSXConverter.CommuteSheetDataType.Companion.addressData
+import com.maur.commutedocmaker.xlsx.XLSXConverter.CommuteSheetDataType.Companion.floatPreciseData
+import com.maur.commutedocmaker.xlsx.XLSXConverter.CommuteSheetDataType.Companion.primaryData
+import com.maur.commutedocmaker.xlsx.XLSXConverter.CommuteSheetDataType.Companion.secondaryData
+import org.apache.poi.xssf.usermodel.XSSFColor
 import org.apache.poi.xssf.usermodel.XSSFSheet
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
@@ -43,7 +48,13 @@ fun sanitizeFileName(title: String): String {
 }
 
 class XLSXConverter(private val context: Context) {
-    private var documentSummary: DocumentSummaryInformation? = null
+    private var documentSummary: DocumentSummaryInformation = DocumentSummaryInformation(
+        dayRange = "",
+        amountOfTransfers = 0,
+        payableAmount = 0f,
+        month = LocalDate.now().month
+    )
+    private val workbook = XSSFWorkbook()
 
     fun convertToXLSX(draft: DraftEntry, autoDetails: AutoDetails): Document? {
         val filepath: String = createFileWithUniquePath(draft.title)
@@ -56,12 +67,7 @@ class XLSXConverter(private val context: Context) {
                 title = title,
                 path = filepath,
                 date = LocalDate.now(),
-                documentSummaryInformation = DocumentSummaryInformation(
-                    dayRange = "A - B",
-                    amountOfTransfers = 123,
-                    payableAmount = 250.0f,
-                    month = LocalDate.now().month
-                )
+                documentSummaryInformation = documentSummary
             )
         } else {
             null
@@ -127,7 +133,7 @@ class XLSXConverter(private val context: Context) {
     }
 
     private fun generateDoc(filepath: String, draft: DraftEntry, autoDetails: AutoDetails): Boolean {
-        val workbook = XSSFWorkbook()
+
         val commuteSheet = workbook.createSheet(stringRes(context, R.string.routes_sheet_name))
         val autoDetailsSheet = workbook.createSheet(stringRes(context, R.string.auto_details_sheet_name))
         fillDetailsSheet(autoDetailsSheet, autoDetails)
@@ -135,28 +141,29 @@ class XLSXConverter(private val context: Context) {
 
         val headerRow = commuteSheet.createRow(0)
         for (header in CommuteSheetDataType.entries) {
-            headerRow.createCell(header.ordinal)
-                .setCellValue(stringRes(context, header.id))
+            headerRow.createCell(header.ordinal).apply {
+                setCellValue(stringRes(context, header.id))
+                cellStyle = cellStyles.defaultHeaderData
+            }
 
-            val approxMinWidth = max(
+
+            val approxMinWidth = 1 + max(
                 headerRow.getCell(header.ordinal).stringCellValue.length,
                 header.tag.length
-            ).let {
-                it + 1
-            }
+            )
             commuteSheet.setColumnWidth(header.ordinal, max(approxMinWidth, header.minColumnWidth) * 256)
         }
 
         val rows: MutableList<RowData> = mutableListOf()
         for (dataPatch in draft.draftDataPatches) {
-            with(dataPatch) {
+            dataPatch.apply {
                 commuteSheet.apply {
                     setColumnWidth(
                         /*columnIndex*/FULL_ROUTE.ordinal,
                         /*width*/max(getColumnWidth(FULL_ROUTE.ordinal), "$baseAddress - $destinationAddress".length))
                 }
 
-                val precision: Long = 100
+                val precision = 100L
                 val prototypeRowData : RowData = mapOf(
                     ENTRY_TAB to ENTRY_TAB.tag,
                     COMMUTE_REASON to COMMUTE_REASON.tag,
@@ -167,16 +174,14 @@ class XLSXConverter(private val context: Context) {
                                 "#0.##",
                                 DecimalFormatSymbols(java.util.Locale.getDefault())
                             ).format(
-                                ((precision * distanceTravelled).toLong() *
-                                    (precision * cashPerKilometer).toLong()) /
-                                    (precision.toDouble() * precision)
+                                ((precision * distanceTravelled).toLong().times(precision * cashPerKilometer).toLong()) /
+                                    (precision * precision).toDouble()
                             ),
                     DEPRECATED to DEPRECATED.tag,
                     COMMUTE_TYPE to COMMUTE_TYPE.tag,
                     VEHICLE to autoDetailsSheet.getRow(Details.AutoModel.ordinal).getCell(1).stringCellValue,
                     VEHICLE_REGISTRATION to autoDetailsSheet.getRow(Details.RegistrationNumber.ordinal).getCell(1).stringCellValue,
                     DEPRECATED2 to DEPRECATED2.tag,
-                    FULL_ROUTE to "$baseAddress - $destinationAddress",
                     DEPARTURE_COUNTRY to "DE",
                     DEPRECATED3 to DEPRECATED3.tag,
                     DEPRECATED4 to DEPRECATED4.tag,
@@ -186,6 +191,7 @@ class XLSXConverter(private val context: Context) {
                     if(forthRouteIncluded){
                         val row: RowData = prototypeRowData + mapOf(
                             DESCRIPTION to stringRes(context, R.string.from_home_to_workplace),
+                            FULL_ROUTE to "$baseAddress - $destinationAddress",
                             DEPARTURE_DATETIME to timeFormatter(date, shiftStartTime, -(5 + distanceTravelled.roundToInt())),
                             ARRIVAL_DATETIME to timeFormatter(date, shiftStartTime, -5)
                         )
@@ -194,6 +200,7 @@ class XLSXConverter(private val context: Context) {
                     if(backRouteIncluded) {
                         val row: RowData = prototypeRowData + mapOf(
                             DESCRIPTION to stringRes(context, R.string.from_workplace_to_home),
+                            FULL_ROUTE to "$destinationAddress - $baseAddress",
                             DEPARTURE_DATETIME to timeFormatter(date, shiftEndTime, 5),
                             ARRIVAL_DATETIME to timeFormatter(date, shiftEndTime, 5 + distanceTravelled.roundToInt()),
                         )
@@ -212,13 +219,62 @@ class XLSXConverter(private val context: Context) {
             }
         }
 
+        // add sorted rows to the sheet
         rows.forEachIndexed { rowIndex, row ->
             val excelRow = commuteSheet.createRow(rowIndex + 1)
             CommuteSheetDataType.entries.forEachIndexed { columnIndex, dataType ->
                 excelRow.apply {
-                    createCell(columnIndex).setCellValue(
-                        row[dataType]
-                    )
+                    createCell(columnIndex).apply {
+                        setCellValue(row[dataType])
+                        when (dataType) {
+                            in floatPreciseData -> {
+                                setCellValue(
+                                    row[dataType]?.replace(',', '.')?.toDoubleOrNull() ?: 0.0
+                                )
+                                cellStyle = cellStyles.floatData
+                            }
+                            in addressData -> { cellStyle = cellStyles.addressData }
+                            in primaryData -> { cellStyle = cellStyles.highlightData }
+                            in secondaryData -> { cellStyle = cellStyles.defaultData }
+                            else -> { cellStyle = cellStyles.defaultData }
+                        }
+                    }
+                }
+            }
+        }
+
+        val commonDateSuffixLength = " HH:mm:ss".length
+        documentSummary.apply {
+            dayRange =
+                "${rows.firstOrNull()?.get(DEPARTURE_DATETIME)?.dropLast(commonDateSuffixLength)} - " +
+                        "${rows.lastOrNull()?.get(ARRIVAL_DATETIME)?.dropLast(commonDateSuffixLength)}"
+            amountOfTransfers = rows.size
+            payableAmount = rows.sumOf {
+                rowData -> rowData[TOTAL_EURO]?.replace(",",".")?.toDoubleOrNull() ?: 0.0
+            }.toFloat()
+            month = rows.lastOrNull()?.get(DEPARTURE_DATETIME)?.let {
+                LocalDate.parse(
+                    it,
+                    DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")
+                ).month
+            } ?: LocalDate.now().month
+        }
+
+        // add the summary footer
+        commuteSheet.createRow(rows.size + 1).apply {
+            /* val footerLabelCell = */
+            createCell(0).setCellValue(stringRes(context, R.string.footer_payable_amount_label))
+
+            /* val footerPayableAmountSummaryCell = */
+            if (rows.size > 0) {
+                val sumFromAddress = commuteSheet.getRow(1).getCell(TOTAL_EURO.ordinal).address.formatAsString()
+                val sumToAddress = commuteSheet.getRow(rows.size).getCell(TOTAL_EURO.ordinal).address.formatAsString()
+                val sumCellFormula = "SUM($sumFromAddress:$sumToAddress)"
+                createCell(TOTAL_EURO.ordinal).apply {
+                    cellFormula = sumCellFormula
+                }
+                createCell(1).apply {
+                    cellFormula = getCell(TOTAL_EURO.ordinal).address.formatAsString()
                 }
             }
         }
@@ -251,24 +307,67 @@ class XLSXConverter(private val context: Context) {
     }
 
 
-    enum class CommuteSheetDataType(val id: Int, val minColumnWidth: Int, val tag: String = "") {
-        ENTRY_TAB(R.string.sheet_entry, 0),
-        COMMUTE_REASON(R.string.sheet_commute_reason, 0, """PRZEJAZDZ\ZLECENIE"""),
-        DISTANCE_TRAVELLED(R.string.sheet_distance_travelled, 0),
-        EURO_PER_KM_RATE(R.string.sheet_euro_per_km_rate, 0),
-        TOTAL_EURO(R.string.sheet_total_euro, 0),
-        DEPRECATED(R.string.sheet_tab, 0),
-        COMMUTE_TYPE(R.string.sheet_commute_type, 0, """SAM\PRYWATNY"""),
-        VEHICLE(R.string.sheet_vehicle, 0),
-        VEHICLE_REGISTRATION(R.string.sheet_vehicle_registration, 0),
-        DEPRECATED2(R.string.sheet_tab2, 0),
-        DESCRIPTION(R.string.sheet_description, 0),
-        FULL_ROUTE(R.string.sheet_full_route, 15),
-        DEPARTURE_DATETIME(R.string.sheet_departure_datetime, 0, "XX.XX.XX xx:xx:xx"),
-        ARRIVAL_DATETIME(R.string.sheet_arrival_datetime, 0, "XX.XX.XX xx:xx:xx"),
-        DEPARTURE_COUNTRY(R.string.sheet_departure_country, 0),
-        DEPRECATED3(R.string.sheet_tab3, 0),
-        DEPRECATED4(R.string.sheet_tab4, 0),
-        ARRIVAL_COUNTRY(R.string.sheet_arrival_country, 0),
+    enum class CommuteSheetDataType(val id: Int, val minColumnWidth: Int = 0, val tag: String = "") {
+        ENTRY_TAB(R.string.sheet_entry),
+        COMMUTE_REASON(R.string.sheet_commute_reason,tag = """PRZEJAZDZ\ZLECENIE"""),
+        DISTANCE_TRAVELLED(R.string.sheet_distance_travelled),
+        EURO_PER_KM_RATE(R.string.sheet_euro_per_km_rate),
+        TOTAL_EURO(R.string.sheet_total_euro),
+        DEPRECATED(R.string.sheet_tab),
+        COMMUTE_TYPE(R.string.sheet_commute_type, tag = """SAM\PRYWATNY"""),
+        VEHICLE(R.string.sheet_vehicle),
+        VEHICLE_REGISTRATION(R.string.sheet_vehicle_registration),
+        DEPRECATED2(R.string.sheet_tab2),
+        DESCRIPTION(R.string.sheet_description),
+        FULL_ROUTE(R.string.sheet_full_route),
+        DEPARTURE_DATETIME(R.string.sheet_departure_datetime, tag = "XX.XX.XX xx:xx:xx"),
+        ARRIVAL_DATETIME(R.string.sheet_arrival_datetime, tag = "XX.XX.XX xx:xx:xx"),
+        DEPARTURE_COUNTRY(R.string.sheet_departure_country),
+        DEPRECATED3(R.string.sheet_tab3),
+        DEPRECATED4(R.string.sheet_tab4),
+        ARRIVAL_COUNTRY(R.string.sheet_arrival_country);
+
+        companion object {
+            val floatPreciseData = setOf(TOTAL_EURO, EURO_PER_KM_RATE)
+            val addressData = setOf(FULL_ROUTE)
+            val primaryData = setOf(COMMUTE_TYPE, TOTAL_EURO, DISTANCE_TRAVELLED, EURO_PER_KM_RATE, DEPARTURE_DATETIME, ARRIVAL_DATETIME)
+            val secondaryData = setOf(CommuteSheetDataType.entries) - primaryData - addressData
+        }
     }
+
+    private val cellStyles = object {
+        val addressData by lazy {
+            workbook.createCellStyle().apply {
+//                setFillBackgroundColor(XSSFColor(byteArrayOf(150.toByte(), 255.toByte(), 190.toByte())))
+                setFillBackgroundColor(context.getColor(R.color.worksheet_address_background).toXSSFColor())
+            }
+        }
+        val highlightData by lazy {
+            workbook.createCellStyle().apply {
+//                setFillBackgroundColor(XSSFColor(byteArrayOf(255.toByte(), 200.toByte(), 100.toByte())))
+                setFillBackgroundColor(context.getColor(R.color.worksheet_highlight_background).toXSSFColor())
+            }
+        }
+        val floatData by lazy {
+            workbook.createCellStyle()
+                .apply { dataFormat = workbook.creationHelper.createDataFormat().getFormat("####0.00") }
+        }
+        val defaultHeaderData by lazy {
+            workbook.createCellStyle()
+                .apply{ setFont(workbook.createFont().apply { bold = true; italic = true }) }
+        }
+        val defaultData by lazy {
+            workbook.createCellStyle()
+                .apply { setFillBackgroundColor(context.getColor(R.color.worksheet_secondary_background).toXSSFColor()) }
+        }
+    }
+}
+
+private fun Int.toXSSFColor(): XSSFColor {
+    val androidColor = this
+    val red = android.graphics.Color.red(androidColor)
+    val green = android.graphics.Color.green(androidColor)
+    val blue = android.graphics.Color.blue(androidColor)
+    val xssfColor = XSSFColor(byteArrayOf(red.toByte(), green.toByte(), blue.toByte()))
+    return xssfColor
 }

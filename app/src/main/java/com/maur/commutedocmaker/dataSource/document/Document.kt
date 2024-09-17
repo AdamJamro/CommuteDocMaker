@@ -14,10 +14,10 @@ data class Document(
     @ColumnInfo(name = "description") val documentSummaryInformation: DocumentSummaryInformation? = null
 ) {
     data class DocumentSummaryInformation(
-        val month: Month,
-        val dayRange: String,
-        val amountOfTransfers: Int,
-        val payableAmount: Float,
+        var month: Month,
+        var dayRange: String,
+        var amountOfTransfers: Int,
+        var payableAmount: Float,
     )
 }
 

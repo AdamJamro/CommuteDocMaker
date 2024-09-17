@@ -53,7 +53,8 @@ class DocMakerAppViewModel(
 
     private val _autoDetails = MutableStateFlow(
         savedStateHandle[AUTO_DETAILS_KEY]
-            ?: List(Details.entries.size) { "" })
+            ?: List(Details.entries.size) { "" }
+    )
     val autoDetails: StateFlow<List<String>> = _autoDetails.asStateFlow()
 
     private val _documents = MutableStateFlow<List<Document>>(
