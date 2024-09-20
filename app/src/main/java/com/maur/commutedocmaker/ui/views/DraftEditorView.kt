@@ -31,12 +31,13 @@ import com.maur.commutedocmaker.DraftPickNameDialog
 import com.maur.commutedocmaker.R
 import com.maur.commutedocmaker.dataSource.draftEntry.DraftDataPatch
 import com.maur.commutedocmaker.dataSource.draftEntry.DraftEntry
-import com.maur.commutedocmaker.ui.viewModels.DraftEditorViewModel
+import com.maur.commutedocmaker.viewModels.DraftEditorViewModel
 import kotlin.math.floor
 import com.maur.commutedocmaker.ui.uiUtils.DatePickerDialog
 import com.maur.commutedocmaker.ui.uiUtils.CommuteClockTimeRangeSliderWrapper
-import com.maur.commutedocmaker.ui.viewModels.DraftEditorEvent.*
+import com.maur.commutedocmaker.viewModels.DraftEditorEvent.*
 import com.maur.commutedocmaker.ui.theme.Typography
+import com.maur.commutedocmaker.viewModels.CashPerKilometer
 
 @Composable
 fun DraftEditorView (
@@ -182,14 +183,6 @@ fun convertStringToFloatRange(start: String, end: String): ClosedFloatingPointRa
     }
     Log.e("DEBUG", "RESULT RANGE $resultRange")
     return resultRange
-}
-
-enum class CashPerKilometer(val rate: Float, val description: Int) {
-    PER_DEFAULT_ROUTE(0.21f, R.string.per_default_route),
-    PER_TWO_PEOPLE(0.29f, R.string.per_two_people),
-    PER_THREE_PEOPLE(0.35f, R.string.per_three_people),
-    PER_FOUR_PEOPLE(0.45f, R.string.per_four_people),
-    PER_FIVE_PEOPLE(0.55f, R.string.per_five_people),
 }
 
 @Composable

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commute Report App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        #privacy-policy-content {
+            display: none;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        button {
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <h1>Welcome to My Commute Report App Page</h1>
+    <div id="main-content"></div>
+    <button onclick="togglePrivacyPolicy()">Show Privacy Policy</button>
+    <div id="privacy-policy-content"></div>
+
+    <script>
+        // Function to load markdown content
+        function loadMarkdownFile(filePath, elementId) {
+            fetch(filePath)
+                .then(response => response.text())
+                .then(text => {
+                    document.getElementById(elementId).innerHTML = marked.parse(text);
+                })
+                .catch(error => console.error('Error loading file:', error));
+        }
+
+        loadMarkdownFile('https://adamjamro.github.io/CommuteReportApp/site-content.md', 'main-content');
+
+        function togglePrivacyPolicy() {
+            const policyContent = document.getElementById('privacy-policy-content');
+            if (policyContent.style.display === 'none') {
+                loadMarkdownFile('https://adamjamro.github.io/CommuteReportApp/privacy-policy.md', 'privacy-policy-content');
+                policyContent.style.display = 'block';
+                document.querySelector('button').textContent = 'Hide Privacy Policy';
+            } else {
+                policyContent.style.display = 'none';
+                document.querySelector('button').textContent = 'Show Privacy Policy';
+            }
+        }
+    </script>
+</body>
+</html>

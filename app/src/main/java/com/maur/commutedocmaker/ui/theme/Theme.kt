@@ -116,6 +116,11 @@ fun CommuteDocMakerTheme(
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.primary.toArgb()
+            window.navigationBarColor = colorScheme.primary.toArgb()
+//            window.insetsController?.setSystemBarsAppearance(
+//                if (darkTheme) 0 else 1,
+//                1
+//            )
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
         }
     }

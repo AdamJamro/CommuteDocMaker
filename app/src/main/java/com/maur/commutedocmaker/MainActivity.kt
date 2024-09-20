@@ -16,8 +16,8 @@ import com.maur.commutedocmaker.dataSource.document.Document
 import com.maur.commutedocmaker.dataSource.draftEntry.DraftEntry
 import com.maur.commutedocmaker.dataSource.preference.PreferenceType
 import com.maur.commutedocmaker.dataSource.preference.PreferenceType.ACCESS.GRANTED
-import com.maur.commutedocmaker.ui.viewModels.DocMakerAppViewModel
-import com.maur.commutedocmaker.ui.viewModels.DocMakerAppViewModelFactory
+import com.maur.commutedocmaker.viewModels.DocMakerAppViewModel
+import com.maur.commutedocmaker.viewModels.DocMakerAppViewModelFactory
 import com.maur.cupcake.ui.theme.CommuteDocMakerTheme
 
 class MainActivity : ComponentActivity() {
@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         if(Debug.isDebuggerConnected())
-            finish()
+//            finish()
 
         Log.d("DEBUG", "MainActivity.onCreate")
 

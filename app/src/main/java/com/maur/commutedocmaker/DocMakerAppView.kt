@@ -28,6 +28,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.maur.commutedocmaker.DocMakerAppViews.*
 import com.maur.commutedocmaker.dataSource.draftEntry.DraftEntry
 import com.maur.commutedocmaker.ui.views.AutoDetailsView
 import com.maur.commutedocmaker.ui.views.DocMakerAppLoadingView
@@ -35,11 +36,11 @@ import com.maur.commutedocmaker.ui.views.DocShareListView
 import com.maur.commutedocmaker.ui.views.DraftListView
 import com.maur.commutedocmaker.ui.theme.Typography
 import com.maur.commutedocmaker.ui.theme.docAppTextStyles
-import com.maur.commutedocmaker.ui.viewModels.DocMakerAppViewModel
+import com.maur.commutedocmaker.viewModels.DocMakerAppViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import com.maur.commutedocmaker.DocMakerAppViews.DOC_SHARE_LIST_VIEW
 import com.maur.commutedocmaker.dataSource.document.Document
+import com.maur.commutedocmaker.ui.uiUtils.ItemFolder
 import com.maur.commutedocmaker.xlsx.sanitizeFileName
 import kotlin.math.max
 
@@ -52,7 +53,7 @@ enum class DocMakerAppViews {
 @Composable
 fun DocMakerAppView(
     viewModel: DocMakerAppViewModel,
-    startScreen: DocMakerAppViews = DocMakerAppViews.DRAFT_LIST_VIEW,
+    startScreen: DocMakerAppViews = DRAFT_LIST_VIEW,
 //    canNavigateBack: Boolean = false,
     onOpenDraftEditor: (
         draftTitle: String,
@@ -66,6 +67,8 @@ fun DocMakerAppView(
 
     val draftEntries by viewModel.entries.collectAsState()
     val autoDetails by viewModel.autoDetails.collectAsState()
+    val documents by viewModel.documents.collectAsState()
+
     var showDialog by remember { mutableStateOf(false) }
     val backStackEntry by navController.currentBackStackEntryAsState()
     val context = LocalContext.current
@@ -103,7 +106,7 @@ fun DocMakerAppView(
                 drawerState = drawerState,
                 currentScreen = getCurrentScreen(),
                 onClickHomeScreen = {
-                    navController.navigate(DocMakerAppViews.DRAFT_LIST_VIEW.name)
+                    navController.navigate(DRAFT_LIST_VIEW.name)
                     scope.launch { drawerState.close() }
                 },
                 onClickDocShareListScreen = {
@@ -111,7 +114,7 @@ fun DocMakerAppView(
                     scope.launch { drawerState.close() }
                 },
                 onClickAutoDetails = {
-                    navController.navigate(DocMakerAppViews.AUTO_DETAILS_VIEW.name)
+                    navController.navigate(AUTO_DETAILS_VIEW.name)
                     scope.launch { drawerState.close() }
                 }
             ) {
@@ -120,8 +123,8 @@ fun DocMakerAppView(
                         AnimatedFab(
                             modifier = Modifier.padding(8.dp),
                             onClick = {
-                                if (getCurrentScreen() != DocMakerAppViews.DRAFT_LIST_VIEW)
-                                    navController.navigate(DocMakerAppViews.DRAFT_LIST_VIEW.name)
+                                if (getCurrentScreen() != DRAFT_LIST_VIEW)
+                                    navController.navigate(DRAFT_LIST_VIEW.name)
                                 showDialog = true
                             }
                         )
@@ -136,35 +139,46 @@ fun DocMakerAppView(
                             navController = navController,
                             startDestination = startScreen.name,
                         ) {
-                            composable(DocMakerAppViews.DRAFT_LIST_VIEW.name) {
-                                DraftListView(
-                                    draftItems = draftEntries,
-                                    onEditDraft = { draftData: DraftEntry ->
-                                        onOpenDraftEditor(
-                                            draftData.title,
-                                            draftData,
-                                            draftEntries.indexOf(draftData)
-                                        )
-                                    },
-                                    onGenerateDoc = { draftData: DraftEntry ->
-                                        if (onGenerateDocument(draftData)) {
-                                            navController.navigate(DOC_SHARE_LIST_VIEW.name)
+                            composable(DRAFT_LIST_VIEW.name) {
+                                ItemFolder (
+                                    emptyFolderLabel = stringResource(R.string.empty_box),
+                                    items = draftEntries
+                                ) {
+                                    DraftListView(
+                                        draftItems = draftEntries,
+                                        onEditDraft = { draftData: DraftEntry ->
+                                            onOpenDraftEditor(
+                                                draftData.title,
+                                                draftData,
+                                                draftEntries.indexOf(draftData)
+                                            )
+                                        },
+                                        onGenerateDoc = { draftData: DraftEntry ->
+                                            if (onGenerateDocument(draftData)) {
+                                                navController.navigate(DOC_SHARE_LIST_VIEW.name)
+                                            }
+                                        },
+                                        onDeleteDraft = { draftData: DraftEntry ->
+                                            viewModel.deleteEntry(context, draftData)
                                         }
-                                    },
-                                    onDeleteDraft = { draftData: DraftEntry ->
-                                        viewModel.deleteEntry(context, draftData)
-                                    }
-                                )
+                                    )
+                                }
                             }
                             composable(DOC_SHARE_LIST_VIEW.name) {
-                                DocShareListView(
-                                    viewModel = viewModel,
-                                    onDocClick = { document ->
-                                        onSendDocument(document)
-                                    }
-                                )
+                                ItemFolder (
+                                    emptyFolderLabel = stringResource(R.string.empty_box),
+                                    items = documents
+                                ) {
+                                    DocShareListView(
+                                        viewModel = viewModel,
+                                        onDocClick = { document ->
+                                            onSendDocument(document)
+                                        },
+                                        documents = documents
+                                    )
+                                }
                             }
-                            composable(DocMakerAppViews.AUTO_DETAILS_VIEW.name) {
+                            composable(AUTO_DETAILS_VIEW.name) {
                                 AutoDetailsView(autoDetails) { detail, value ->
                                     viewModel.updateAutoDetails(detail, value)
                                 }
@@ -203,7 +217,7 @@ fun DocMakerSideMenu(
                 NavigationDrawerItem(
                     label = { Text(text = stringResource(id = R.string.drafts_screen_name)) },
                     onClick = onClickHomeScreen,
-                    selected = currentScreen == DocMakerAppViews.DRAFT_LIST_VIEW
+                    selected = currentScreen == DRAFT_LIST_VIEW
                 ) 
                 NavigationDrawerItem(
                     label = { Text(text = stringResource(id = R.string.generated_files_screen_name)) },
@@ -213,7 +227,7 @@ fun DocMakerSideMenu(
                 NavigationDrawerItem(
                     label = { Text(text = stringResource(id = R.string.auto_details_screen_name)) },
                     onClick = onClickAutoDetails,
-                    selected = currentScreen == DocMakerAppViews.AUTO_DETAILS_VIEW
+                    selected = currentScreen == AUTO_DETAILS_VIEW
                 )
             }
         },

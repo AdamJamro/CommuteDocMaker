@@ -1,4 +1,4 @@
-package com.maur.commutedocmaker.ui.viewModels
+package com.maur.commutedocmaker.viewModels
 
 import android.content.Context
 import android.net.Uri

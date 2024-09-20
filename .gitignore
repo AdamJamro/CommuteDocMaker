@@ -13,6 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
-*.der
-*.jks
-*.pem
+*_cert.der
+.jks
+.pem

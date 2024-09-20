@@ -27,6 +27,7 @@ import java.text.DecimalFormatSymbols
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 //enum class DraftFormField(
@@ -45,6 +46,15 @@ fun sanitizeFileName(title: String): String {
         .replace(Regex("(?<=\\s)\\s|^\\s"), "")
         .replace(Regex("[^a-zA-Z0-9.()ĄąĆćĘęŁłŃńÓóŚśŹźŻż \\-]"), "_")
     return sanitized
+}
+
+private fun Int.toXSSFColor(): XSSFColor {
+    val androidColor = this
+    val red = android.graphics.Color.red(androidColor)
+    val green = android.graphics.Color.green(androidColor)
+    val blue = android.graphics.Color.blue(androidColor)
+    val xssfColor = XSSFColor(byteArrayOf(red.toByte(), green.toByte(), blue.toByte()))
+    return xssfColor
 }
 
 class XLSXConverter(private val context: Context) {
@@ -151,7 +161,10 @@ class XLSXConverter(private val context: Context) {
                 headerRow.getCell(header.ordinal).stringCellValue.length,
                 header.tag.length
             )
-            commuteSheet.setColumnWidth(header.ordinal, max(approxMinWidth, header.minColumnWidth) * 256)
+            var columnWidth = max(approxMinWidth, header.minColumnWidth)
+            if (header.maxColumnWidth > 0)
+                columnWidth = min(columnWidth, header.maxColumnWidth)
+            commuteSheet.setColumnWidth(header.ordinal, columnWidth * 256)
         }
 
         val rows: MutableList<RowData> = mutableListOf()
@@ -160,13 +173,17 @@ class XLSXConverter(private val context: Context) {
                 commuteSheet.apply {
                     setColumnWidth(
                         /*columnIndex*/FULL_ROUTE.ordinal,
-                        /*width*/max(getColumnWidth(FULL_ROUTE.ordinal), "$baseAddress - $destinationAddress".length))
+                        /*width*/max(
+                            getColumnWidth(FULL_ROUTE.ordinal),
+                            (baseAddress.length + destinationAddress.length + 3) * 256
+                        )
+                    )
                 }
 
                 val precision = 100L
                 val prototypeRowData : RowData = mapOf(
                     ENTRY_TAB to ENTRY_TAB.tag,
-                    COMMUTE_REASON to COMMUTE_REASON.tag,
+                    COMMUTE_TYPE to COMMUTE_TYPE.tag,
                     DISTANCE_TRAVELLED to distanceTravelled.toString().replace('.', ','),
                     EURO_PER_KM_RATE to cashPerKilometer.toString().replace('.', ','),
                     TOTAL_EURO to
@@ -178,7 +195,7 @@ class XLSXConverter(private val context: Context) {
                                     (precision * precision).toDouble()
                             ),
                     DEPRECATED to DEPRECATED.tag,
-                    COMMUTE_TYPE to COMMUTE_TYPE.tag,
+                    COMMUTE_MEAN_OF_TRANSPORT to COMMUTE_MEAN_OF_TRANSPORT.tag,
                     VEHICLE to autoDetailsSheet.getRow(Details.AutoModel.ordinal).getCell(1).stringCellValue,
                     VEHICLE_REGISTRATION to autoDetailsSheet.getRow(Details.RegistrationNumber.ordinal).getCell(1).stringCellValue,
                     DEPRECATED2 to DEPRECATED2.tag,
@@ -307,14 +324,14 @@ class XLSXConverter(private val context: Context) {
     }
 
 
-    enum class CommuteSheetDataType(val id: Int, val minColumnWidth: Int = 0, val tag: String = "") {
+    enum class CommuteSheetDataType(val id: Int, val minColumnWidth: Int = 0, val maxColumnWidth: Int = 0, val tag: String = "") {
         ENTRY_TAB(R.string.sheet_entry),
-        COMMUTE_REASON(R.string.sheet_commute_reason,tag = """PRZEJAZDZ\ZLECENIE"""),
+        COMMUTE_TYPE(R.string.sheet_commute_reason,tag = """PRZEJAZDZ\ZLECENIE"""),
         DISTANCE_TRAVELLED(R.string.sheet_distance_travelled),
-        EURO_PER_KM_RATE(R.string.sheet_euro_per_km_rate),
+        EURO_PER_KM_RATE(R.string.sheet_euro_per_km_rate, maxColumnWidth = "0.00".length + 1),
         TOTAL_EURO(R.string.sheet_total_euro),
         DEPRECATED(R.string.sheet_tab),
-        COMMUTE_TYPE(R.string.sheet_commute_type, tag = """SAM\PRYWATNY"""),
+        COMMUTE_MEAN_OF_TRANSPORT(R.string.sheet_commute_type, tag = """SAM\PRYWATNY"""),
         VEHICLE(R.string.sheet_vehicle),
         VEHICLE_REGISTRATION(R.string.sheet_vehicle_registration),
         DEPRECATED2(R.string.sheet_tab2),
@@ -330,7 +347,16 @@ class XLSXConverter(private val context: Context) {
         companion object {
             val floatPreciseData = setOf(TOTAL_EURO, EURO_PER_KM_RATE)
             val addressData = setOf(FULL_ROUTE)
-            val primaryData = setOf(COMMUTE_TYPE, TOTAL_EURO, DISTANCE_TRAVELLED, EURO_PER_KM_RATE, DEPARTURE_DATETIME, ARRIVAL_DATETIME)
+            val primaryData = setOf(
+                COMMUTE_TYPE,
+                TOTAL_EURO,
+                DISTANCE_TRAVELLED,
+                EURO_PER_KM_RATE,
+                DEPARTURE_DATETIME,
+                ARRIVAL_DATETIME,
+                DEPARTURE_COUNTRY,
+                ARRIVAL_COUNTRY
+            )
             val secondaryData = setOf(CommuteSheetDataType.entries) - primaryData - addressData
         }
     }
@@ -338,18 +364,19 @@ class XLSXConverter(private val context: Context) {
     private val cellStyles = object {
         val addressData by lazy {
             workbook.createCellStyle().apply {
-//                setFillBackgroundColor(XSSFColor(byteArrayOf(150.toByte(), 255.toByte(), 190.toByte())))
-                setFillBackgroundColor(context.getColor(R.color.worksheet_address_background).toXSSFColor())
+                setFillForegroundColor(context.getColor(R.color.worksheet_address_background).toXSSFColor())
+                fillPattern = org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND
             }
         }
         val highlightData by lazy {
             workbook.createCellStyle().apply {
 //                setFillBackgroundColor(XSSFColor(byteArrayOf(255.toByte(), 200.toByte(), 100.toByte())))
-                setFillBackgroundColor(context.getColor(R.color.worksheet_highlight_background).toXSSFColor())
+                setFillForegroundColor(context.getColor(R.color.worksheet_highlight_background).toXSSFColor())
+                fillPattern = org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND
             }
         }
         val floatData by lazy {
-            workbook.createCellStyle()
+            highlightData.copy()
                 .apply { dataFormat = workbook.creationHelper.createDataFormat().getFormat("####0.00") }
         }
         val defaultHeaderData by lazy {
@@ -358,16 +385,12 @@ class XLSXConverter(private val context: Context) {
         }
         val defaultData by lazy {
             workbook.createCellStyle()
-                .apply { setFillBackgroundColor(context.getColor(R.color.worksheet_secondary_background).toXSSFColor()) }
+                .apply {
+                    setFillForegroundColor(context.getColor(R.color.worksheet_secondary_background).toXSSFColor())
+                    fillPattern = org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND
+                }
         }
     }
 }
 
-private fun Int.toXSSFColor(): XSSFColor {
-    val androidColor = this
-    val red = android.graphics.Color.red(androidColor)
-    val green = android.graphics.Color.green(androidColor)
-    val blue = android.graphics.Color.blue(androidColor)
-    val xssfColor = XSSFColor(byteArrayOf(red.toByte(), green.toByte(), blue.toByte()))
-    return xssfColor
-}
+

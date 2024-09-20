@@ -11,7 +11,7 @@ import com.maur.commutedocmaker.dataSource.draftEntry.DraftEntry
 import com.maur.commutedocmaker.dataSource.preference.PreferenceType
 import com.maur.commutedocmaker.dataSource.preference.PreferenceType.ACCESS.DENIED
 import com.maur.commutedocmaker.ui.views.DraftEditorView
-import com.maur.commutedocmaker.ui.viewModels.DraftEditorViewModelFactory
+import com.maur.commutedocmaker.viewModels.DraftEditorViewModelFactory
 import com.maur.cupcake.ui.theme.CommuteDocMakerTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
@@ -27,7 +27,7 @@ class DraftEditorActivity : ComponentActivity() {
 
         val draft = getSerializable(intent, "draft_raw", DraftEntry::class.java)
         val title = intent.getStringExtra("draft_title") ?: "new draft"
-        val draftIndex = intent.getIntExtra("draft_index", -1)
+//        val draftIndex = intent.getIntExtra("draft_index", -1)
         viewModelFactory = DraftEditorViewModelFactory(
             title,
             scope = lifecycleScope,

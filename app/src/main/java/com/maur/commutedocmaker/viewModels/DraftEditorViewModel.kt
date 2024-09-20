@@ -1,4 +1,4 @@
-package com.maur.commutedocmaker.ui.viewModels
+package com.maur.commutedocmaker.viewModels
 
 import android.content.Context
 import androidx.compose.runtime.*
@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.maur.commutedocmaker.dataSource.draftEntry.DraftDataPatch
 import com.maur.commutedocmaker.dataSource.draftEntry.DraftEntry
-import com.maur.commutedocmaker.ui.viewModels.DraftEditorEvent.*
+import com.maur.commutedocmaker.viewModels.DraftEditorEvent.*
 import com.maur.commutedocmaker.xlsx.sanitizeFileName
 import com.maur.commutedocmaker.R
 import kotlinx.coroutines.CoroutineScope
@@ -202,4 +202,12 @@ class DraftEditorViewModelFactory(
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
+}
+
+enum class CashPerKilometer(val rate: Float, val description: Int) {
+    PER_DEFAULT_ROUTE(0.21f, R.string.per_default_route),
+    PER_TWO_PEOPLE(0.29f, R.string.per_two_people),
+    PER_THREE_PEOPLE(0.35f, R.string.per_three_people),
+    PER_FOUR_PEOPLE(0.45f, R.string.per_four_people),
+    PER_FIVE_PEOPLE(0.55f, R.string.per_five_people),
 }
