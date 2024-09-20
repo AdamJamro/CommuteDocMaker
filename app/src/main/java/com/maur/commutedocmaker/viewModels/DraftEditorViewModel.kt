@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:app/src/main/java/com/maur/commutedocmaker/viewModels/DraftEditorViewModel.kt
 package com.maur.commutedocmaker.viewModels
-========
-package com.maur.commutedocmaker.ui.viewModels
->>>>>>>> origin/master:app/src/main/java/com/maur/commutedocmaker/ui/viewModels/DraftEditorViewModel.kt
 
 import android.content.Context
 import androidx.compose.runtime.*
@@ -11,11 +7,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.maur.commutedocmaker.dataSource.draftEntry.DraftDataPatch
 import com.maur.commutedocmaker.dataSource.draftEntry.DraftEntry
-<<<<<<<< HEAD:app/src/main/java/com/maur/commutedocmaker/viewModels/DraftEditorViewModel.kt
 import com.maur.commutedocmaker.viewModels.DraftEditorEvent.*
-========
-import com.maur.commutedocmaker.ui.viewModels.DraftEditorEvent.*
->>>>>>>> origin/master:app/src/main/java/com/maur/commutedocmaker/ui/viewModels/DraftEditorViewModel.kt
 import com.maur.commutedocmaker.xlsx.sanitizeFileName
 import com.maur.commutedocmaker.R
 import kotlinx.coroutines.CoroutineScope
@@ -98,11 +90,7 @@ class DraftEditorViewModel(
                 is Submit ->
                     return DraftEntry(
                         title = _title.value,
-<<<<<<<< HEAD:app/src/main/java/com/maur/commutedocmaker/viewModels/DraftEditorViewModel.kt
                         contentDescription = createDraftEntryDescription(_draftDataPatches.value, event.resourceContext),
-========
-                        contentDescription = createDraftEntryDescription(_draftDataPatches.value, event?.resourceContext),
->>>>>>>> origin/master:app/src/main/java/com/maur/commutedocmaker/ui/viewModels/DraftEditorViewModel.kt
                         draftDataPatches = _draftDataPatches.value
                     )
                 is SelectedDatesChanged -> {
@@ -174,11 +162,8 @@ class DraftEditorViewModel(
                     if (patch.backRouteIncluded) payableAmount += payload
                 }
             }
-<<<<<<<< HEAD:app/src/main/java/com/maur/commutedocmaker/viewModels/DraftEditorViewModel.kt
+
             val payableAmountFormatted = String.format(Locale.getDefault(), "%.2f", payableAmount)
-========
-            val payableAmountFormatted = String.format("%.2f", payableAmount)
->>>>>>>> origin/master:app/src/main/java/com/maur/commutedocmaker/ui/viewModels/DraftEditorViewModel.kt
             val firstDate = dates.minOrNull() ?: return getRes(resourceContext, R.string.empty_draft_content)
             val lastDate = dates.maxOrNull() ?: return getRes(resourceContext, R.string.empty_draft_content)
 

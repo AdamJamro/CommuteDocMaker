@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:app/src/main/java/com/maur/commutedocmaker/viewModels/DocMakerAppViewModel.kt
 package com.maur.commutedocmaker.viewModels
-========
-package com.maur.commutedocmaker.ui.viewModels
->>>>>>>> origin/master:app/src/main/java/com/maur/commutedocmaker/ui/viewModels/DocMakerAppViewModel.kt
 
 import android.content.Context
 import android.net.Uri
