@@ -16,3 +16,9 @@ local.properties
 *_cert.der
 .jks
 .pem
+/app/debug/app-debug.aab
+/app/release/app-release.aab
+/upload-keystore.jks
+/upload_certificate.pem
+/.idea/uiDesigner.xml
+
