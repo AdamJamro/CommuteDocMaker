@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         if(Debug.isDebuggerConnected())
-//            finish()
+            finish()
 
         Log.d("DEBUG", "MainActivity.onCreate")
 
@@ -121,7 +121,11 @@ class MainActivity : ComponentActivity() {
 
         when (result.resultCode) {
             RESULT_OK -> {
-                if (draftIndex >= 0 && draftIndex <= vm.entries.value.lastIndex) {
+                if (draft == null){
+                    Toast.makeText(this, "Failure: Draft was not saved. Try again", Toast.LENGTH_SHORT).show()
+                    return@registerForActivityResult
+                }
+                else if (draftIndex >= 0 && draftIndex <= vm.entries.value.lastIndex) {
                     val success = vm.updateEntry(draftIndex, draft)
                     val msg =
                         if (success)

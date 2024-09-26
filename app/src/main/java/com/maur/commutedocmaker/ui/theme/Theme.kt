@@ -95,6 +95,7 @@ private val DarkColors = darkColorScheme(
     scrim = md_theme_dark_scrim,
 )
 
+@Suppress("DEPRECATION")
 @Composable
 fun CommuteDocMakerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -115,8 +116,10 @@ fun CommuteDocMakerTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            window.navigationBarColor = colorScheme.primary.toArgb()
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                window.statusBarColor = colorScheme.primary.toArgb()
+                window.navigationBarColor = colorScheme.primary.toArgb()
+            }
 //            window.insetsController?.setSystemBarsAppearance(
 //                if (darkTheme) 0 else 1,
 //                1

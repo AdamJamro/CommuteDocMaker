@@ -17,7 +17,14 @@ import com.maur.commutedocmaker.dataSource.preference.PreferenceType.ACCESS
 import com.maur.commutedocmaker.dataSource.preference.PreferenceType.ACCESS.DENIED
 import com.maur.commutedocmaker.dataSource.preference.PreferenceType.ACCESS.GRANTED
 import com.maur.commutedocmaker.shouldRevokeAccess
-import com.google.gson.*
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonSerializer
+import com.google.gson.JsonSerializationContext
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonDeserializationContext
+import com.google.gson.JsonElement
+import com.google.gson.JsonPrimitive
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -113,13 +120,15 @@ class LocalDateAdapter : JsonSerializer<LocalDate>, JsonDeserializer<LocalDate> 
         Preference::class,
         Document::class
     ],
-    version = 1)
+    version = 1
+)
 @TypeConverters(Converters::class)
 abstract class DocAppDatabase : RoomDatabase() {
     abstract fun draftEntryDao(): DraftEntryDao
     abstract fun autoDetailsDao(): AutoDetailsDao
     abstract fun preferenceDao(): PreferenceDao
     abstract fun documentDao(): DocumentDao
+
 
     companion object {
         private var INSTANCE: DocAppDatabase? = null
@@ -134,14 +143,16 @@ abstract class DocAppDatabase : RoomDatabase() {
                     DocAppDatabase::class.java,
                     "draftApp.db"
                 )
+                    .fallbackToDestructiveMigration()
                     .addCallback(DatabaseCallback(scope))
-//                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 //return
                 instance
             }
         }
+
+        @Suppress("unused")
         fun destroyInstance() {
             if(INSTANCE?.isOpen == true) {
                 INSTANCE?.close()
@@ -151,7 +162,7 @@ abstract class DocAppDatabase : RoomDatabase() {
         }
     }
 
-    private class DatabaseCallback(private val scope: CoroutineScope) : RoomDatabase.Callback() {
+    private class DatabaseCallback(private val scope: CoroutineScope) : Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
 

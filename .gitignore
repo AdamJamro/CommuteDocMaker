@@ -1,3 +1,4 @@
+.gitignore
 *.iml
 .gradle
 /local.properties
@@ -18,7 +19,12 @@ local.properties
 .pem
 /app/debug/app-debug.aab
 /app/release/app-release.aab
-/upload-keystore.jks
-/upload_certificate.pem
+./upload-keystore.jks
+./upload_certificate.pem
+./upload_certificate.der
+./app/build
+./app/release
+./app/debug
+#./docs
+#./app/proguard-rules.pro
 /.idea/uiDesigner.xml
-

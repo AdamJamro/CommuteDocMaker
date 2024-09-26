@@ -2,7 +2,6 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
-
 }
 
 android {
@@ -13,8 +12,8 @@ android {
         applicationId = "com.maur.commutedocmaker"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.21"
+        versionCode = 7
+        versionName = "0.25"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -24,10 +23,15 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("./upload-keystore.jks")
-            storePassword = "tanbulans"
-            keyAlias = "upload_key"
-            keyPassword = "tanbulans"
+            val r8KeyPath: String by project
+            val r8KeyAlias: String by project
+            val r8KeyPassword: String by project
+            val r8StorePassword: String by project
+
+            storeFile = file(r8KeyPath)
+            storePassword = r8StorePassword
+            keyAlias = r8KeyAlias
+            keyPassword = r8KeyPassword
         }
     }
 
@@ -44,11 +48,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
@@ -61,23 +65,6 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-
-//    signingConfigs {
-//        create("release") {
-//            storeFile = file("deployment_keystore.jks")
-//            storePassword = "tanbulans"
-//            keyAlias = "my_keystore_alias"
-//            keyPassword = "tanbulans"
-//        }
-//    }
-//
-//    buildTypes {
-//        getByName("release") {
-//            isMinifyEnabled = true
-//            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-//            signingConfig = signingConfigs.getByName("release")
-//        }
-//    }
 }
 
 dependencies {
@@ -93,7 +80,7 @@ dependencies {
 
 
     //compose
-    implementation(platform("androidx.compose:compose-bom:2024.09.00"))
+    implementation(platform("androidx.compose:compose-bom:2024.09.02"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -102,7 +89,7 @@ dependencies {
     implementation("androidx.compose.runtime:runtime-livedata")
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
-    implementation("androidx.navigation:navigation-compose:2.8.0")
+    implementation("androidx.navigation:navigation-compose:2.8.1")
     implementation("androidx.wear.compose:compose-material:1.4.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
@@ -119,7 +106,7 @@ dependencies {
     implementation("androidx.room:room-ktx:$roomVersion")
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-common:2.6.1")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.10")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.25")
 
     // publishing and integrity
     implementation("com.google.android.play:integrity:1.4.0")
