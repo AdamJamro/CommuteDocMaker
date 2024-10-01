@@ -116,7 +116,7 @@ class MainActivity : ComponentActivity() {
     private val getResultFromDraftEditor = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val intent: Intent? = result.data
         val draft = getSerializable(intent, "draft_raw", DraftEntry::class.java)
-        val draftIndex = vm.collectCurrentEditedDraftPos()
+        val draftIndex = vm.getCurrentEditedDraftPos()
 //        val draftIndex = intent?.getIntExtra("draft_index", -1) ?: -1
 
         when (result.resultCode) {
@@ -135,7 +135,8 @@ class MainActivity : ComponentActivity() {
                     Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
                 }
                 else {
-                    vm.addEntry(draft)
+                    vm.addEntry(draft.copy(draftId = vm.entries.value.size))
+                    vm.updateCurrentDraftPos(0) // where the new item landed
                 }
             }
             RESULT_CANCELED -> {

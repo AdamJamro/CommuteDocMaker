@@ -11,8 +11,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,12 +46,20 @@ import com.maur.commutedocmaker.ui.uiUtils.ItemFolder
 import com.maur.commutedocmaker.xlsx.sanitizeFileName
 import kotlin.math.max
 
-enum class DocMakerAppViews {
-    DRAFT_LIST_VIEW,
-    DOC_SHARE_LIST_VIEW,
-    AUTO_DETAILS_VIEW
+enum class DocMakerAppViews(val nameRes: Int) {
+    DRAFT_LIST_VIEW(R.string.draft_list_view_name),
+    DOC_SHARE_LIST_VIEW(R.string.doc_share_list_view_name),
+    AUTO_DETAILS_VIEW(R.string.auto_details_view_name);
 }
 
+fun <T> List<T>.toSnapshotStateList(): SnapshotStateList<T> {
+    // Create a new SnapshotStateList and add all elements from the List
+    val stateList = mutableStateListOf<T>()
+    stateList.addAll(this)
+    return stateList
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DocMakerAppView(
     viewModel: DocMakerAppViewModel,
@@ -66,6 +76,25 @@ fun DocMakerAppView(
 ) {
 
     val draftEntries by viewModel.entries.collectAsState()
+    val expandedDraftIndex by viewModel.currentlyEditedDraftPos.collectAsState()
+//    val syncedStateList = remember { viewModel.syncedSnapshotEntries }
+//    val draftEntries by syncedStateList.collectAsState()
+
+        //        object {
+//        override fun setValue(
+//            thisRef: Any?,
+//            property: KProperty<*>,
+//            value: SnapshotStateList<DraftEntry>
+//        ) {
+//            draftEntries.clear()
+//            draftEntries.addAll(value)
+//        }
+//
+//        override fun getValue(
+//        ): SnapshotStateList<DraftEntry> {
+//            draftEntries.toSnapshotStateList()
+//        }
+//    }
     val autoDetails by viewModel.autoDetails.collectAsState()
     val documents by viewModel.documents.collectAsState()
 
@@ -129,6 +158,30 @@ fun DocMakerAppView(
                             }
                         )
                     },
+                    topBar = {
+                        TopAppBar(
+                            title = {
+                                Text(
+                                    text = stringResource(getCurrentScreen().nameRes),
+                                    style = MaterialTheme.typography.titleLarge
+                                )
+                            },
+                            navigationIcon = {
+                                IconButton(
+                                    onClick = {
+                                        scope.launch {
+                                            if (drawerState.isClosed) drawerState.open()
+                                        }
+                                    }
+                                ) {
+                                    Icon(Icons.Default.Menu, contentDescription = "TopAppBar Menu")
+                                }
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                MaterialTheme.colorScheme.primaryContainer
+                            )
+                        )
+                    },
                     content = { contentPadding ->
 //                var uiState: CommuteDocMakerScreenState by remember { mutableStateOf(CommuteDocMakerScreenState()) }
 
@@ -146,6 +199,10 @@ fun DocMakerAppView(
                                 ) {
                                     DraftListView(
                                         draftItems = draftEntries,
+                                        expandedIndex = expandedDraftIndex,
+                                        onSelectItem = { itemIndex ->
+                                            viewModel.updateCurrentDraftPos(itemIndex)
+                                        },
                                         onEditDraft = { draftData: DraftEntry ->
                                             onOpenDraftEditor(
                                                 draftData.title,
@@ -160,6 +217,7 @@ fun DocMakerAppView(
                                         },
                                         onDeleteDraft = { draftData: DraftEntry ->
                                             viewModel.deleteEntry(context, draftData)
+                                            viewModel.updateCurrentDraftPos(-1)
                                         }
                                     )
                                 }
@@ -206,26 +264,28 @@ fun DocMakerSideMenu(
         gesturesEnabled = true,
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
+            ModalDrawerSheet(
+                drawerShape = MaterialTheme.shapes.large,
+            ) {
                 Text(
-                    "Drawer content",
+                    text = stringResource(R.string.menu),
                     modifier = Modifier.padding(16.dp),
                     fontSize = Typography.titleLarge.fontSize
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 HorizontalDivider()
                 NavigationDrawerItem(
-                    label = { Text(text = stringResource(id = R.string.drafts_screen_name)) },
+                    label = { Text(text = stringResource(R.string.draft_list_view_name)) },
                     onClick = onClickHomeScreen,
                     selected = currentScreen == DRAFT_LIST_VIEW
                 ) 
                 NavigationDrawerItem(
-                    label = { Text(text = stringResource(id = R.string.generated_files_screen_name)) },
+                    label = { Text(text = stringResource(id = R.string.doc_share_list_view_name)) },
                     onClick = onClickDocShareListScreen,
                     selected = currentScreen == DOC_SHARE_LIST_VIEW
                 )
                 NavigationDrawerItem(
-                    label = { Text(text = stringResource(id = R.string.auto_details_screen_name)) },
+                    label = { Text(text = stringResource(id = R.string.auto_details_view_name)) },
                     onClick = onClickAutoDetails,
                     selected = currentScreen == AUTO_DETAILS_VIEW
                 )
@@ -351,7 +411,7 @@ fun AnimatedFab(
     )
 
     LaunchedEffect(Unit) {
-        delay(2500)
+        delay(1800)
         expanded = true
         delay(3000)
         expanded = false

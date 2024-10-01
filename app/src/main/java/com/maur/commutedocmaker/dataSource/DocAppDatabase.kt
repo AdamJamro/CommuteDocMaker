@@ -1,6 +1,7 @@
 package com.maur.commutedocmaker.dataSource
 
 import android.content.Context
+import androidx.compose.ui.res.stringResource
 import androidx.room.*
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.maur.commutedocmaker.dataSource.autoDetails.AutoDetails
@@ -26,6 +27,8 @@ import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonElement
 import com.google.gson.JsonPrimitive
 import com.google.gson.reflect.TypeToken
+import com.maur.commutedocmaker.R
+import com.maur.commutedocmaker.stringRes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.lang.reflect.Type
@@ -131,6 +134,7 @@ abstract class DocAppDatabase : RoomDatabase() {
 
 
     companion object {
+        @Volatile
         private var INSTANCE: DocAppDatabase? = null
 
         fun getInstance(
@@ -143,8 +147,8 @@ abstract class DocAppDatabase : RoomDatabase() {
                     DocAppDatabase::class.java,
                     "draftApp.db"
                 )
-                    .fallbackToDestructiveMigration()
-                    .addCallback(DatabaseCallback(scope))
+//                    .fallbackToDestructiveMigration()
+                    .addCallback(DatabaseCallback(context, scope))
                     .build()
                 INSTANCE = instance
                 //return
@@ -162,7 +166,10 @@ abstract class DocAppDatabase : RoomDatabase() {
         }
     }
 
-    private class DatabaseCallback(private val scope: CoroutineScope) : Callback() {
+    private class DatabaseCallback(
+        private val context: Context,
+        private val scope: CoroutineScope
+    ) : Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
 
@@ -172,19 +179,17 @@ abstract class DocAppDatabase : RoomDatabase() {
                 }
 
                 for (preference in PreferenceType::class.sealedSubclasses) {
-
                     preference.simpleName
-                        ?.let {
-                            val key = it
-                            val value = when(it) {
+                        ?.let { preferenceName ->
+                            val value = when(preferenceName) {
                                 ACCESS.key -> GRANTED
                                 else -> ""
                             }
-                            Preference(key, value)
+                            Preference(preferenceName, value)
                         }
-                        ?.let {
+                        ?.let { insertPreference ->
                             scope.launch {
-                                database.preferenceDao().insertPreference(it)
+                                database.preferenceDao().insertPreference(insertPreference)
                             }
                         }
                 }
@@ -205,12 +210,8 @@ abstract class DocAppDatabase : RoomDatabase() {
 
         suspend fun populateDatabase(draftEntryDao: DraftEntryDao) {
             draftEntryDao.insert(
-                DraftEntry("Example", "Hello! this is an example draft", draftId = 0),
-            )
-            draftEntryDao.insert(
-                DraftEntry("Another Example", "Hello! this is another example draft", draftId = 1)
+                DraftEntry(stringRes(context, R.string.example_draft_title), stringRes(context, R.string.example_draft_description), draftId = 0),
             )
         }
     }
 }
-

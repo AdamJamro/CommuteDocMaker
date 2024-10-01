@@ -3,7 +3,6 @@ package com.maur.commutedocmaker.viewModels
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.FileProvider
 import androidx.lifecycle.*
@@ -40,7 +39,8 @@ class DocMakerAppViewModel(
     }
 
     private val scope = injectScope ?: viewModelScope
-    private val currentlyEditedDraftPos: MutableStateFlow<Int> = MutableStateFlow(-1)
+    private val _currentlyEditedDraftPos: MutableStateFlow<Int> = MutableStateFlow(-1)
+    val currentlyEditedDraftPos: StateFlow<Int> = _currentlyEditedDraftPos.asStateFlow()
     val isLoading = mutableStateOf(true)
 
     private val preferences: MutableStateFlow<List<Preference>> = MutableStateFlow(emptyList())
@@ -50,6 +50,7 @@ class DocMakerAppViewModel(
             ?: emptyList()
     )
     val entries: StateFlow<List<DraftEntry>> = _entries.asStateFlow()
+//    val syncedSnapshotEntries = SyncedStateList(entries)
 
     private val _autoDetails = MutableStateFlow(
         savedStateHandle[AUTO_DETAILS_KEY]
@@ -74,6 +75,10 @@ class DocMakerAppViewModel(
                 Log.d("DEBUG", "DocMakerAppViewModel.init did not manage to fetch details from database ${_autoDetails.value}")
             }
 
+//            _entries.update { List(5) { DraftEntry(title = "EX TITLE", contentDescription = "EMPTY EMPTY EMPTY EMPTY EMPTY EMPTY") } }
+//            _entries.update { it + List(2) { DraftEntry(title = "EX2214TLE", contentDescription = "asd") } }
+//            _entries.update { it + List(2) { DraftEntry(title = "EX", contentDescription = "EMPTY EMPTY") } }
+//            _entries.update { it + List(25) { DraftEntry(title = "EXTLE", contentDescription = "EMPTY EMPTY EMPTY EMPTY EMPTY EMPTY") } }
             draftRepository.allDrafts.firstOrNull()?.sortedBy { it.draftId }?.let { drafts ->
                 Log.d("DEBUG", "DocMakerAppViewModel.init data fetched $drafts")
                 _entries.update { drafts }
@@ -131,8 +136,8 @@ class DocMakerAppViewModel(
 //            if (getPreference(ACCESS) == DENIED) {
 //                 TODO: revoke access
 //            }
-            Log.d("DEBUG", "updated database auto details ${autoDetailsRepository.allAutoDetails.first().first().details}")
-            Log.d("DEBUG", "updated database entries ${draftRepository.allDrafts.first()}")
+            Log.d("DEBUG", "updated database auto details ${autoDetailsRepository.allAutoDetails.first().first().details}"
+                    + "\nupdated database entries ${draftRepository.allDrafts.first()}")
         }
     }
 
@@ -168,35 +173,40 @@ class DocMakerAppViewModel(
     }
 
     fun collectCurrentEditedDraftPos() : Int {
-        val result = currentlyEditedDraftPos.value
-        currentlyEditedDraftPos.update { -1 }
+        val result = _currentlyEditedDraftPos.value
+        updateCurrentDraftPos(-1)
         return result
+    }
+
+    fun getCurrentEditedDraftPos(): Int {
+        return _currentlyEditedDraftPos.value
     }
 
     fun updateCurrentDraftPos(newPos: Int) {
         scope.launch {
-            currentlyEditedDraftPos.update { newPos }
+            _currentlyEditedDraftPos.update { newPos }
         }
     }
 
     fun deleteEntry(context: Context? = null, draft: DraftEntry) {
         scope.launch {
             val index = _entries.value.indexOf(draft)
-            if (index == -1) return@launch
             if (index < 0 || index > _entries.value.lastIndex) {
-                if (context != null)
-                    Toast.makeText(context,"std", Toast.LENGTH_SHORT).show()
+                Log.d("DEBUG", "draft not found in entries")
+                return@launch
             } else {
                 _entries.update { oldEntries: List<DraftEntry> ->
-                    val lastIndex = oldEntries.lastIndex
-                    val formerEntries = oldEntries.subList(0, index)
-                    val latterEntries = oldEntries.subList(
-                        /*from*/ min(index + 1, lastIndex + 1),
-                        /*to*/   lastIndex + 1
-                    )
+                    oldEntries.toMutableList().also { it.remove(draft) }.toList()
 
-                    /*return*/
-                    formerEntries + latterEntries
+//                    val lastIndex = oldEntries.lastIndex
+//                    val formerEntries = oldEntries.subList(0, index)
+//                    val latterEntries = oldEntries.subList(
+//                        /*from*/ min(index + 1, lastIndex + 1),
+//                        /*to*/   lastIndex + 1
+//                    )
+//
+//                    /*return*/
+//                    formerEntries + latterEntries
                 }
             }
         }

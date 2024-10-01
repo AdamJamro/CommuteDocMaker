@@ -1,3 +1,5 @@
+import com.android.utils.minimumSizeOfTokenizeCommandLineBuffer
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -12,8 +14,8 @@ android {
         applicationId = "com.maur.commutedocmaker"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "0.25"
+        versionCode = 9
+        versionName = "0.27"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -45,6 +47,12 @@ android {
                 debugSymbolLevel = "symbol_table"
                 abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
             }
+        }
+        create("prerelease") {
+            initWith(getByName("debug"))
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
     compileOptions {

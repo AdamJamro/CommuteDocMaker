@@ -10,6 +10,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -17,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
@@ -70,30 +72,58 @@ fun DraftEditorView (
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
-                .padding(vertical = 8.dp)
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(vertical = 15.dp)
-                    .clickableWithoutRipple(
-                        interactionSource = titleClickInteractionSource,
-                        onClick = { showNameChangeDialog = true }
-                    )
-                    .width(200.dp),
-                text = viewModel.title,
-                style = Typography.titleLarge,
-                textAlign = TextAlign.Center,
-                softWrap = true
-            )
             Button(
                 modifier = Modifier
                     .size(width = 55.dp, height = 45.dp)
-                    .align(Alignment.CenterEnd),
+//                    .align(Alignment.CenterStart)
+                ,
+                contentPadding = PaddingValues(12.dp),
+                onClick = {
+                    onFinishActivity(RESULT_CANCELED, null)
+                }
+            ) {
+                Icon(
+                    modifier = Modifier.fillMaxSize(),
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "cancel_draft_edition_button"
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .wrapContentHeight(),
+                contentAlignment = Alignment.Center
+            ){
+
+                Text(
+                    modifier = Modifier
+                        .wrapContentSize()
+                        .clip(shape = RoundedCornerShape(32.dp))
+                        .background(MaterialTheme.colorScheme.primary)
+                        .clickableWithoutRipple(
+                            interactionSource = titleClickInteractionSource,
+                            onClick = { showNameChangeDialog = true }
+                        )
+                        .padding(vertical = 15.dp, horizontal = 20.dp),
+                    text = viewModel.title,
+                    style = Typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    textAlign = TextAlign.Center,
+                    softWrap = true
+                )
+            }
+            Button(
+                modifier = Modifier
+                    .size(width = 55.dp, height = 45.dp)
+//                    .align(Alignment.CenterEnd)
+                ,
                 contentPadding = PaddingValues(10.dp),
                 onClick = {
                     val draft : DraftEntry? = viewModel.onUiEvent(Submit(resourceContext = compositionContext))
@@ -108,21 +138,6 @@ fun DraftEditorView (
                     modifier = Modifier.fillMaxSize(),
                     imageVector = Icons.Default.Done,
                     contentDescription = "submit_draft_button"
-                )
-            }
-            Button(
-                modifier = Modifier
-                    .size(width = 55.dp, height = 45.dp)
-                    .align(Alignment.CenterStart),
-                contentPadding = PaddingValues(12.dp),
-                onClick = {
-                    onFinishActivity(RESULT_CANCELED, null)
-                }
-            ) {
-                Icon(
-                    modifier = Modifier.fillMaxSize(),
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "cancel_draft_edition_button"
                 )
             }
         }
@@ -285,26 +300,47 @@ fun DataPatchesEditor(
                     Column(
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
+                            .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
-                        horizontalAlignment = Alignment.End,
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Row {
+                        Row (
+                            Modifier
+                                .clip(RoundedCornerShape(42.dp))
+                                .height(50.dp)
+                                .background(MaterialTheme.colorScheme.primaryContainer)
+                                .clickableWithoutRipple(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    onClick = { viewModel.onUiEvent(ForthRouteIncludedChanged(!dataPatchState.forthRouteIncluded, patchIndex)) }
+                                )
+                                .padding(12.dp)
+                        ) {
                             Text(
                                 modifier = Modifier.align(Alignment.CenterVertically),
-                                text = stringResource(id = R.string.forth_commute_included_string_representation)
+                                text = stringResource(id = R.string.forth_commute_included_string_representation),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
-                            Spacer(modifier = Modifier.size(12.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
                             Switch(
                                 checked = dataPatchState.forthRouteIncluded,
                                 onCheckedChange = { viewModel.onUiEvent(ForthRouteIncludedChanged(it, patchIndex)) },
                             )
                         }
-
-                        Row {
+                        Row (
+                            Modifier
+                                .clip(RoundedCornerShape(42.dp))
+                                .height(50.dp)
+                                .background(MaterialTheme.colorScheme.primaryContainer)
+                                .clickableWithoutRipple(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    onClick = { viewModel.onUiEvent(BackRouteIncludedChanged(!dataPatchState.backRouteIncluded, patchIndex)) }
+                                )
+                                .padding(12.dp)
+                        ) {
                             Text(
                                 modifier = Modifier.align(Alignment.CenterVertically),
-                                text = stringResource(id = R.string.back_commute_included_string_representation)
+                                text = stringResource(id = R.string.back_commute_included_string_representation),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Spacer(modifier = Modifier.size(12.dp))
                             Switch(

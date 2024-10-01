@@ -1,15 +1,15 @@
 <resources>
     <string name="app_name">CommuteDocMaker</string>
-    <string name="drafts_screen_name">DRAFTS</string>
-    <string name="generated_files_screen_name">FILES</string>
-    <string name="auto_details_screen_name">AUTO DETAILS</string>
+<!--    <string name="drafts_screen_name">DRAFTS</string>-->
+<!--    <string name="generated_files_screen_name">FILES</string>-->
+<!--    <string name="auto_details_screen_name">AUTO DETAILS</string>-->
     <string name="base_address_string_representation">Adres Kwatery</string>
     <string name="destination_address_string_representation">Adres Pracy</string>
     <string name="distance_travelled_string_representation">odległość (km)</string>
     <string name="shift_time_length_string_representation">długośc zmiany (godziny)</string>
     <string name="shift_start_full_date_string_representation">pełna data i godzina rozpoczęcia pracy</string>
-    <string name="forth_commute_included_string_representation">do pracy</string>
-    <string name="back_commute_included_string_representation">z pracy</string>
+    <string name="forth_commute_included_string_representation">przejazd do pracy</string>
+    <string name="back_commute_included_string_representation">przejazd z pracy</string>
     <string name="day_hours_option_selected_string_representation">godziny dzienne</string>
     <string name="night_hours_option_selected_string_representation">godziny nocne</string>
     <string name="owner_first_name">Imię</string>
@@ -68,4 +68,13 @@
     <string name="enter_draft_new_name">Wprowadź nową nazwę</string>
     <string name="enter_new_draft_name">Wprowadź nazwę dokumentu</string>
     <string name="footer_payable_amount_label">kwota do zaplaty:</string>
+    <string name="menu">Menu</string>
+    <string name="example_draft_title">Przykład Dokumentu</string>
+    <string name="example_draft_description">Kliknij mnie dwukrotnie aby edytować!</string>
+    <string name="draft_list_view_name">Wersje robocze</string>
+    <string name="doc_share_list_view_name">Dokumenty Excel (.xlsx)</string>
+    <string name="auto_details_view_name">Zapamiętane Dane</string>
+    <string name="ok">Ok</string>
+    <string name="select_dates">WYBRANE DATY</string>
+    <string name="confirm_deletion">Usunąć ten element?</string>
 </resources>

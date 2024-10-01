@@ -21,7 +21,7 @@ import com.maur.commutedocmaker.ui.theme.Typography
 @Composable
 fun ItemFolder(
     modifier: Modifier = Modifier,
-    emptyFolderLabel: String = "Empty Folder",
+    emptyFolderLabel: String = "This Folder is Empty",
     emptyFolderIcon: @Composable () -> Unit = {},
     items: List<Any> = emptyList(),
     content: @Composable () -> Unit
